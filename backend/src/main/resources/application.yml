@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: gridguard-backend
+
+  # MySQL Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/gridguard_db?useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+
+  # MongoDB Configuration
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/gridguard_telemetry
+      auto-index-creation: true
+
+  # Jackson Configuration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.gridguard: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+
+# GridGuard Configuration
+gridguard:
+  transformer:
+    nominal-voltage: 230.0
+    nominal-current: 10.0
+    nominal-temperature: 30.0
+    max-temperature: 80.0
+    rated-design-life-years: 25.0
+    warning-thi-threshold: 70.0
+    critical-thi-threshold: 50.0
+  
+  thresholds:
+    voltage-undervolt: 185.0
+    voltage-overvolt: 265.0
+    current-overload: 15.0
+    temperature-trip: 85.0
+    vibration-trip: 0.60
+
+  weights:
+    voltage-stress: 0.25
+    current-stress: 0.35
+    thermal-stress: 0.25
+    vibration-stress: 0.15
+
+  esp32:
+    serial-port: COM3
+    baud-rate: 115200
+    timeout-ms: 1000
+
+# Actuator & Health Check
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# API Documentation
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method

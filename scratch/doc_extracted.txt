@@ -1,0 +1,374 @@
+4.1 ARDIUNO SOFTWARE:
+Arduino
+ is an open-source electronics platform based on easy-to-use hardware and software. 
+Arduino
+ boards
+ are able to read inputs - light on a sensor, a finger on a button, or a Twitter message - and turn it into an output - activating a motor, turning on an LED, publishing something online. You can tell your board what to do by sending a set of instructions to the microcontroller on the board. To do so you use the 
+Arduino
+ programming language
+ (based on 
+Wiring
+), and 
+the 
+Arduino
+ Software (IDE)
+, based on 
+Processing
+.
+Over the years 
+Arduino
+ has been the brain of thousands of projects, from everyday objects to complex scientific instruments. A worldwide community of makers - students, hobbyists, artists, programmers, and professionals - has gathered around this open-source platform, their contributions have added up to an incredible amount of 
+accessible knowledge
+ that can be of great help to novices and experts alike.
+Arduino
+ was born at the 
+Ivrea
+ Interaction Design Institute as an easy tool for fast prototyping, aimed at students without a background in electronics and programming. As soon as it reached a wider community, the 
+Arduino
+ board started changing to adapt to new needs and challenges, differentiating its offer from simple 8-bit boards to products for 
+IoT
+ applications, wearable, 3D printing, and embedded environments. All 
+Arduino
+ boards are completely open-source, empowering users to build them independently and eventually adapt them to their particular needs. 
+The
+software
+, too, is open-source, and it is growing through the contributions of users worldwide.
+Why 
+Arduino
+?
+ Thanks to its simple and accessible user experience, 
+Arduino
+ has been used in thousands of different projects and applications. The 
+Arduino
+ software is easy-to-use for beginners, yet flexible enough for advanced users. It runs on Mac, Windows, and Linux. Teachers and students use it to build low cost scientific instruments, to prove chemistry and physics principles, or to get started with programming and robotics. Designers and architects build interactive prototypes, musicians and artists use it for installations and to experiment with new musical instruments. Makers, of course, use it to build many of the projects exhibited at the Maker Faire, for example. 
+Arduino
+ is a key tool to learn new things. Anyone - children, hobbyists, artists, programmers - can start tinkering just following the step by step instructions of a kit, or sharing ideas online with other members of the 
+Arduino
+ community.
+There are many other microcontrollers and microcontroller platforms available for physical computing. Parallax Basic Stamp, 
+Netmedia's
+ BX-24, 
+Phidgets
+, MIT's 
+Handyboard
+, and many others offer similar functionality. All of these tools take the 
+messy details of microcontroller programming and wrap it up in an easy-to-use package. 
+Arduino
+ also simplifies the process of working with microcontrollers, but it offers some advantage for teachers, students, and interested amateurs over other systems:
+Cross-platform - The 
+Arduino
+ Software (IDE) runs on Windows, Macintosh OSX, and Linux operating systems. Most microcontroller systems are limited to Windows.
+Simple, clear programming environment - The 
+Arduino
+ Software (IDE) is easy-to-use for beginners, yet flexible enough for advanced users to take advantage of as well. For teachers, it's conveniently based on the Processing programming environment, so students learning to program in that environment will be familiar with how the 
+Arduino
+ IDE works.
+Open source and extensible software - The 
+Arduino
+ software is published as open source tools, available for extension by experienced programmers. The language can be expanded through C++ libraries, and people wanting to understand the technical details can make the leap from 
+Arduino
+ to the AVR C programming language on which it's based. Similarly, you can add AVR-C code directly into your 
+Arduino
+ programs if you want to.
+Open source and extensible hardware - The plans of the 
+Arduino
+ boards are published under a Creative Commons license, so experienced circuit designers can make their own version of the module, extending it and improving it. Even relatively inexperienced users can build the 
+breadboard version of the module
+ in order to understand how it works and save money.
+Writing Sketches
+Programs written using 
+Arduino
+ Software (IDE) are called sketches. These sketches are written in the text editor and are saved with the file extension .
+ino
+. The editor has features for cutting/pasting and for searching/replacing text. The message area gives feedback while saving and exporting and also displays errors. The console displays text output by the 
+Arduino
+ Software (IDE), including complete error messages and other information. The bottom 
+righthand
+ corner of the window displays the configured board and serial port. The toolbar buttons allow you to verify and upload programs, create, open, and save sketches, and open the serial monitor.
+FILE
+New
+ 
+Creates a new instance of the editor, with the bare minimum structure of a sketch already in place.
+Open
+ 
+Allows 
+to load
+ a sketch file browsing through the computer drives and folders.
+Open Recent
+ 
+Provides a short list of the most recent sketches, ready to be opened.
+Sketchbook
+ 
+Shows
+ the current sketches within the sketchbook folder structure; clicking on any name opens the corresponding sketch in a new editor instance.
+Examples
+ 
+Any
+ example provided by the 
+Arduino
+ Software (IDE) or library shows up in this menu item. All the examples are structured in a tree that allows easy access by topic or library.
+Close
+ 
+Closes
+ the instance of the 
+Arduino
+ Software from which it is clicked.
+Save
+ 
+Saves
+ the sketch with the current name. If the file hasn't been named before, a name will be provided in a "Save as
+.."
+ window.
+Save as...
+ 
+Allows 
+to save
+ the current sketch with a different name.
+Page Setup
+ 
+It shows the Page Setup window for printing.
+Print
+ 
+Sends
+ the current sketch to the printer according to the settings defined in Page Setup.
+Preferences
+ 
+Opens the Preferences window where some settings of the IDE may be customized, as the language of the IDE interface.
+Quit
+ 
+Closes all IDE windows. The same sketches open when Quit was chosen will be automatically reopened the next time you start the IDE.
+EDIT
+Undo/Redo
+ 
+Goes back of one or more steps you did while editing; when you go back, you may go forward with Redo.
+Cut
+ 
+Removes the selected text from the editor and places it into the clipboard.
+Copy
+ 
+Duplicates the selected text in the editor and places it into the clipboard.
+Copy for Forum
+ 
+Copies the code of your sketch to the clipboard in a form suitable for posting to the forum, complete with syntax coloring.
+Copy as HTML
+ 
+Copies the code of your sketch to the clipboard as HTML, suitable for embedding in web pages.
+Paste
+ 
+Puts
+ the contents of the clipboard at the cursor position, in the editor.
+Select All
+ 
+Selects and highlights the whole content of the editor.
+Comment/Uncomment
+ 
+Puts or removes the // comment marker at the beginning of each selected line.
+Increase/Decrease Indent
+ 
+Adds or subtracts a space at the beginning of each selected line, moving the text one space on the right or eliminating a space at the beginning.
+Find
+ 
+Opens the Find and Replace window where you can specify text to search inside the current sketch according to several options.
+Find Next
+ 
+Highlights the next occurrence - if any - of the string specified as the search item in the Find window, relative to the cursor position.
+Find Previous
+ 
+Highlights the previous occurrence - if any - of the string specified as the search item in the Find window relative to the cursor position.
+SKETCH
+Verify/Compile
+ 
+Checks your sketch for errors compiling it; it will report memory usage for code and variables in the console area.
+Upload
+ 
+Compiles and loads the binary file onto the configured board through the configured Port.
+Upload Using Programmer
+ 
+This will overwrite the 
+bootloader
+ on the board; you will need to use Tools > Burn 
+Bootloader
+ to restore it and be able to Upload to USB serial port again. However, it allows you to use the full capacity of the Flash memory for your sketch. Please note that this command will NOT burn the fuses. To do so 
+a 
+Tools
+ -> Burn 
+Bootloader
+ command must be executed.
+Export Compiled Binary
+ 
+Saves a .hex file that may be kept as archive or sent to the board using other tools.
+Show Sketch Folder
+ 
+Opens the current sketch folder.
+Include Library
+ 
+Adds a library to your sketch by inserting #include statements at the start of your code. For more details, 
+see
+libraries
+ below. Additionally, from this menu item you can access the Library Manager and import new libraries from .zip files.
+Add File...
+ 
+Adds a source file to the sketch (it will be copied from its current location). The new file appears in a new tab in the sketch window. Files can be removed from the sketch using the tab menu accessible clicking on the small triangle icon below the serial monitor one on the right side o the toolbar.
+TOOLS
+Auto Format
+ 
+This
+ formats your code nicely: i.e. indents it so that opening and closing curly braces line up, and that the statements inside curly braces are indented more.
+Archive Sketch
+ 
+Archives a copy of the current sketch in .zip format. The archive is placed in the same directory as the sketch.
+Fix Encoding & Reload
+ 
+Fixes possible discrepancies between the editor char map encoding and other operating systems char maps.
+Serial Monitor
+ 
+Opens the serial monitor window and initiates the exchange of data with any connected board on the currently selected Port. This usually resets the board, if the board supports Reset over serial port opening.
+Board
+ 
+Select the board that you're using. See below for 
+descriptions of the various boards
+.
+Port
+ 
+This
+ menu contains all the serial devices (real or virtual) on your machine. It should automatically refresh every time you open the top-level tools menu.
+Programmer
+ 
+For
+ selecting a 
+harware
+ programmer when programming a board or chip and not using the onboard USB-serial connection. Normally you won't need this, but if you're 
+burning a 
+bootloader
+ to a new microcontroller, you will use this.
+Burn 
+Bootloader
+ 
+The
+ items in this menu allow you to burn a 
+bootloader
+ onto the microcontroller on an 
+Arduino
+ board. This is not required for normal use of an 
+Arduino
+ or 
+Genuino
+ 
+board but is useful if you purchase 
+a new 
+ATmega
+ microcontroller (which normally come
+ without a 
+bootloader
+). Ensure that you've selected the correct board from the Boards menu before burning the 
+bootloader
+ on the target board. This command also set the right fuses.
+HELP
+Here you find easy access to a number of documents that come with the 
+Arduino
+ Software (IDE). You have access to Getting Started, Reference, this guide to the IDE and other documents locally, without an internet connection. The documents are a local copy of the online ones and may link back to our online website.
+FIND IN REFERENCE
+ 
+This is the only interactive function of the Help menu: it directly selects the relevant page in the local copy of the Reference for the function or command under the cursor.
+SKETCH BOOK
+The 
+Arduino
+ Software (IDE) uses the concept of a sketchbook: a standard place to store your programs (or sketches). The sketches in your sketchbook can be opened from the File > Sketchbook menu or from the Open button on the toolbar. The first time you run the 
+Arduino
+ software, it will automatically create a directory for your sketchbook. You can view or change the location of the sketchbook location from with the Preferences dialog.
+Beginning with version 1.0, files are saved with 
+a
+ .
+ino
+ file extension. Previous versions use the .
+pde
+ extension. You may still open .
+pde
+ named files in version 1.0 and later, the software will automatically rename the extension to .
+ino
+.
+Tabs, Multiple Files, and Compilation
+Allows you to manage sketches with more than one file (each of which appears in its own tab). These can be normal 
+Arduino
+ code files (no visible extension), C files (.c extension), C++ files (.
+cpp
+), or header files (.h).
+UPLOADING
+Before uploading your sketch, you need to select the correct items from the Tools > Board and Tools > Port menus. 
+The
+boards
+ are described below. On the Mac, the serial port is probably something like /dev/tty.usbmodem241 (for 
+an
+ Uno or Mega2560 or Leonardo) or /dev/tty.usbserial-1B1 (for a 
+Duemilanove
+ or earlier USB board), or/dev/tty.USA19QW1b1P1.1 (for a serial board connected with a 
+Keyspan
+ USB-to-Serial adapter). On Windows, it's probably COM1 or COM2 (for a serial board) or COM4, COM5, COM7, or higher (for a USB board) - to find out, you look for USB serial device in the 
+ports
+ section of the Windows Device Manager. On Linux, it should be /dev/
+ttyACMx
+ ,/
+dev/
+ttyUSBx
+ or similar. Once you've selected the correct serial port and board, press the upload button in the toolbar or select the Upload item from the Sketch menu. Current 
+Arduino
+ boards will reset automatically and begin the upload. With older boards (pre-
+Diecimila
+) that lack auto-reset, you'll need to press the reset button on the board just before starting the upload. On most boards, you'll see the RX and TX LEDs blink as the sketch is uploaded. The 
+Arduino
+ Software (IDE) will display a message when the upload is complete, or show an error.
+When you upload a sketch, you're using the 
+Arduino
+ 
+bootloader
+, a small program that has been loaded on to the microcontroller on your board. It allows you to upload code without using any additional hardware. The 
+bootloader
+ is active for a few seconds when the board resets; then it starts whichever sketch was most recently uploaded to the microcontroller. The 
+bootloader
+ will blink the on-board (pin 13) LED when it starts (i.e. when the board resets).
+LIBRARIES
+Libraries provide extra functionality for use in sketches, e.g. working with hardware or manipulating data. 
+To use a library in a sketch, select it from the Sketch > Import Library menu.
+ This will insert one or more #
+include
+ statements at the top of the sketch and compile the library with your sketch. Because libraries are uploaded to the board with your sketch, they increase the amount of space it takes up. If a sketch no longer needs a library, simply delete its #
+includestatements
+ from the top of your code.
+There is a 
+list of libraries
+ in the reference. Some libraries are included with the 
+Arduino
+ software. Others can be downloaded from a variety of sources or through the Library Manager. Starting with version 1.0.5 of the IDE, you do can import a library from a zip file and use it in an open sketch. See these 
+instructions for installing a third-party library
+.
+To write your own library, see 
+this tutorial
+.
+Third-Party Hardware
+Support for third-party hardware can be added to the hardware directory of your sketchbook directory. Platforms installed there may include board definitions 
+(which appear in the board menu), core libraries, 
+bootloaders
+, and programmer definitions. To install, create the hardware directory, then unzip the third-party platform into its own sub-directory. (Don't use "
+arduino
+" as the sub-directory name or you'll override the built-in 
+Arduino
+ platform.) To uninstall, simply delete its directory.
+For details on creating packages for third-party hardware, see the 
+Arduino
+ IDE 1.5 3rd party Hardware specification
+.
+SERIAL MONITOR
+This displays serial sent from the 
+Arduino
+ or 
+Genuino
+ board over USB or serial connector. To send data to the board, enter text and click on the "send" button or press enter. Choose the baud rate from the drop-down menu that matches the rate passed to 
+Serial.begin
+ in your sketch. Note that on Windows, Mac or Linux the board will reset (it will rerun your sketch) when you connect with the serial monitor. Please note that the Serial Monitor does not process control characters; if your sketch needs a complete management of the serial communication with control characters, you can use an external terminal program and connect it to the COM port assigned to your 
+Arduino
+ board.
+You can also talk to the board from Processing, Flash, 
+MaxMSP
+, etc (see the 
+interfacing page
+ for details).

@@ -1,0 +1,378 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+/* ------------ LCD ------------ */
+
+LiquidCrystal_I2C lcd(0x27,16,2);
+
+/* ------------ TEMPERATURE SENSOR ------------ */
+
+#define ONE_WIRE_BUS PA2
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
+/* ------------ PIN DEFINITIONS ------------ */
+
+#define VOLTAGE_PIN PA0
+#define CURRENT_PIN PA1
+#define OIL_PIN PB0
+#define VIBRATION_PIN PA3
+
+#define RELAY PB8
+#define BUZZER PB9
+
+#define RESET_BUTTON PB10
+#define OVERLOAD_SWITCH PB11
+
+#define GREEN_LED PB12
+#define YELLOW_LED PB13
+#define RED_LED PB14
+
+/* ------------ LIMIT VALUES ------------ */
+
+#define TEMP_LIMIT 40
+#define CURRENT_LIMIT 4
+
+#define CURRENT_SAMPLES 1000
+
+/* ------------ GLOBAL VARIABLES ------------ */
+
+float voltage = 0;
+float current = 0;
+float temperature = 0;
+
+float healthIndex = 100;
+float remainingLife = 0;
+
+float thermalStress = 0;
+float electricalStress = 0;
+float oilStress = 0;
+float vibrationStress = 0;
+
+float faultPenalty = 0;
+
+int v_adc = 0;
+int i_adc = 0;
+
+int oilState = 0;
+int vibrationState = 0;
+
+int overloadState = 1;
+int lastOverloadState = 1;
+
+/* ------------ SETUP ------------ */
+
+void setup()
+{
+
+Serial.begin(9600);
+
+analogReadResolution(12);
+
+pinMode(RELAY, OUTPUT);
+pinMode(BUZZER, OUTPUT);
+
+pinMode(GREEN_LED, OUTPUT);
+pinMode(YELLOW_LED, OUTPUT);
+pinMode(RED_LED, OUTPUT);
+
+pinMode(OIL_PIN, INPUT_PULLUP);
+//pinMode(VIBRATION_PIN, INPUT);
+
+pinMode(RESET_BUTTON, INPUT_PULLUP);
+pinMode(OVERLOAD_SWITCH, INPUT_PULLUP);
+
+sensors.begin();
+
+lcd.init();
+lcd.backlight();
+
+lcd.setCursor(0,0);
+lcd.print("TRANSFORMER");
+
+lcd.setCursor(0,1);
+lcd.print("HEALTH MONITOR");
+
+delay(2000);
+lcd.clear();
+
+digitalWrite(RELAY,HIGH);
+
+}
+
+/* ------------ MAIN LOOP ------------ */
+
+void loop()
+{
+
+readSensors();
+
+calculateHealth();
+
+updateLEDs();
+
+faultCheck();
+
+displayData();
+
+resetSystem();
+
+delay(1000);
+
+}
+
+/* ================================================= */
+/* ================= FUNCTIONS ====================== */
+/* ================================================= */
+
+void readSensors()
+{
+
+  sensors.requestTemperatures();
+  temperature = sensors.getTempCByIndex(0);
+
+  /* -------- Voltage -------- */
+
+  v_adc = analogRead(VOLTAGE_PIN);
+  voltage = (v_adc * 3.3 / 4095.0) * 100;
+  vibrationState = analogRead(VIBRATION_PIN);
+
+  /* -------- Current (1000 samples) -------- */
+
+  long currentSum = 0;
+
+  for(int i=0;i<1000;i++)
+  {
+    currentSum += analogRead(CURRENT_PIN);
+  }
+
+  i_adc = currentSum / 1000;
+
+  current = (i_adc * 3.3 / 4095.0) * 30;
+
+  /* -------- Other Sensors -------- */
+
+  oilState = digitalRead(OIL_PIN);
+
+  //vibrationState = digitalRead(VIBRATION_PIN);
+
+  overloadState = digitalRead(OVERLOAD_SWITCH);
+
+}
+/* ------------ HEALTH CALCULATION ------------ */
+
+void calculateHealth()
+{
+
+thermalStress = (temperature / TEMP_LIMIT) * 30;
+
+electricalStress = (current / CURRENT_LIMIT) * 30;
+
+if(oilState == LOW)
+oilStress = 20;
+else
+oilStress = 0;
+
+if(vibrationState >500)
+vibrationStress = 20;
+else
+vibrationStress = 0;
+
+healthIndex = 100 - (thermalStress + electricalStress + oilStress + vibrationStress + faultPenalty);
+
+if(healthIndex < 0)
+healthIndex = 0;
+
+if(healthIndex > 100)
+healthIndex = 100;
+
+remainingLife = (healthIndex / 100.0) * 20.0;
+
+}
+
+/* ------------ LED STATUS ------------ */
+
+void updateLEDs()
+{
+
+if(healthIndex > 60)
+{
+digitalWrite(GREEN_LED,HIGH);
+digitalWrite(YELLOW_LED,LOW);
+digitalWrite(RED_LED,LOW);
+}
+
+else if(healthIndex > 40)
+{
+digitalWrite(GREEN_LED,LOW);
+digitalWrite(YELLOW_LED,HIGH);
+digitalWrite(RED_LED,LOW);
+}
+
+else
+{
+digitalWrite(GREEN_LED,LOW);
+digitalWrite(YELLOW_LED,LOW);
+digitalWrite(RED_LED,HIGH);
+}
+
+}
+
+/* ------------ FAULT CHECK ------------ */
+
+void faultCheck()
+{
+
+if(temperature > TEMP_LIMIT)
+{
+
+lcd.clear();
+lcd.print("TEMP HIGH TRIP");
+
+digitalWrite(RELAY,LOW);
+digitalWrite(BUZZER,HIGH);
+digitalWrite(RED_LED,HIGH);
+
+faultPenalty += 10;
+
+delay(2000);
+
+}
+
+if(oilState == LOW)
+{
+
+lcd.clear();
+lcd.print("OIL LEVEL LOW");
+
+digitalWrite(RELAY,LOW);
+digitalWrite(BUZZER,HIGH);
+digitalWrite(RED_LED,HIGH);
+
+faultPenalty += 20;
+
+delay(2000);
+
+}
+
+if(vibrationState > 500)
+{
+
+lcd.clear();
+lcd.print("VIBRATION ALERT");
+
+digitalWrite(RELAY,LOW);
+digitalWrite(BUZZER,HIGH);
+digitalWrite(RED_LED,HIGH);
+
+faultPenalty += 10;
+
+delay(2000);
+
+}
+
+/* -------- OVERLOAD BUTTON TRIP -------- */
+
+if(overloadState == LOW && lastOverloadState == HIGH)
+{
+
+lcd.clear();
+lcd.print("OVERLOAD TRIP");
+
+digitalWrite(RELAY,LOW);
+digitalWrite(BUZZER,HIGH);
+digitalWrite(RED_LED,HIGH);
+
+faultPenalty += 15;
+
+delay(2000);
+
+}
+
+lastOverloadState = overloadState;
+
+}
+
+/* ------------ LCD DISPLAY ------------ */
+
+void displayData()
+{
+
+static int screen = 0;
+
+lcd.clear();
+
+if(screen == 0)
+{
+
+lcd.setCursor(0,0);
+lcd.print("V:");
+lcd.print(voltage,0);
+
+lcd.print(" I:");
+lcd.print(i_adc,1);
+
+lcd.setCursor(0,1);
+lcd.print("T:");
+lcd.print(temperature,1);
+
+lcd.print(" HI:");
+lcd.print(healthIndex,0);
+
+}
+
+else
+{
+
+lcd.setCursor(0,0);
+lcd.print("Life:");
+lcd.print(remainingLife,1);
+lcd.print("Y");
+
+lcd.setCursor(0,1);
+
+lcd.print("Oil:");
+
+if(oilState==LOW)
+lcd.print("LOW ");
+else
+lcd.print("OK ");
+
+lcd.print("Vib:");
+lcd.print(vibrationState,3);
+
+// if(vibrationState==HIGH)
+// lcd.print("YES");
+// else
+// lcd.print("NO");
+
+}
+
+screen++;
+
+if(screen > 1)
+screen = 0;
+
+}
+
+/* ------------ RESET SYSTEM ------------ */
+
+void resetSystem()
+{
+
+if(digitalRead(RESET_BUTTON)==LOW)
+{
+
+digitalWrite(RELAY,HIGH);
+digitalWrite(BUZZER,LOW);
+
+lcd.clear();
+lcd.print("SYSTEM RESET");
+
+delay(1500);
+
+}
+
+}
