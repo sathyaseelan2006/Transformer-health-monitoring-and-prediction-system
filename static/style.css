@@ -537,7 +537,9 @@ body {
 }
 
 .transformer-stage {
-    min-height: 360px;
+    min-height: 540px;
+    height: 100%;
+    width: 100%;
     display: grid;
     place-items: center;
     position: relative;
@@ -580,13 +582,15 @@ body {
 .model-viewer-shell {
     position: relative;
     width: 100%;
-    height: 360px;
+    height: 100%;
+    min-height: 540px;
     z-index: 1;
 }
 
 model-viewer {
     width: 100%;
     height: 100%;
+    min-height: 540px;
     display: block;
     --poster-color: transparent;
     background: transparent;
@@ -1236,9 +1240,9 @@ model-viewer {
     position: relative;
     display: grid;
     grid-template-columns: minmax(400px, 1fr) minmax(440px, 1.25fr);
-    gap: 20px;
-    align-items: center;
-    min-height: 520px;
+    gap: 24px;
+    align-items: stretch;
+    min-height: 560px;
 }
 
 .spatial-connector-canvas {
@@ -1420,6 +1424,9 @@ model-viewer {
 .twin-model-column {
     position: relative;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /* Spotlight Callout Zoom Inset Badges (b) and (d) matching reference figure */
