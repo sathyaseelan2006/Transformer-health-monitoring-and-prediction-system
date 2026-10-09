@@ -198,7 +198,11 @@ function normalizeApiPayload(data) {
         gateway_status: "ONLINE (P2P Link Active)",
         packet_count: 1
     };
-    return { telemetry: tel, stress, protection, environmental, prediction, lora };
+    const alerts = payload.alerts || [];
+    const kafka = payload.kafka || {};
+    const database = payload.database || {};
+    const history = payload.history || [];
+    return { telemetry: tel, stress, protection, environmental, prediction, lora, alerts, kafka, database, history, mode: payload.mode };
 }
 
 function simulatedPayload() {
@@ -537,109 +541,233 @@ function updateSpatialDynamicGraphs(tel, stress) {
     if (lineCEl) lineCEl.setAttribute("d", `M 475 ${lineCyStart.toFixed(1)} C 610 ${lineCyStart.toFixed(1)}, 710 425, 860 425`);
 }
 
+function updateSpatialDynamicGraphs(tel, stress) {
+    try {
+        wavePhase += 0.06;
+        const sv = (stress && typeof stress.s_v === "number") ? stress.s_v : 0.05;
+        const si = (stress && typeof stress.s_i === "number") ? stress.s_i : 0.05;
+        const st = (stress && typeof stress.s_t === "number") ? stress.s_t : 0.05;
+        const svib = (stress && typeof stress.s_vib === "number") ? stress.s_vib : 0.05;
+
+        // 1. Calculate dynamic wave peak amplitudes based on live telemetry stress
+        const vAmp = 14 + (sv * 24) + Math.sin(wavePhase * 1.2) * 4;
+        const iAmp = 12 + (si * 20) + Math.cos(wavePhase * 1.5) * 3.5;
+        const vibAmp = 10 + (svib * 26) + Math.sin(wavePhase * 2.0) * 5;
+        const thermalPeakY = clamp(60 - (st * 35) + Math.sin(wavePhase * 0.9) * 8, 15, 80);
+
+        // 2. Generate smooth sine wave paths for Graph (a)
+        let dMeasuredV = "M 45 45";
+        for (let x = 45; x <= 380; x += 15) {
+            const y = 45 + Math.sin((x - 45) * 0.05 + wavePhase) * vAmp;
+            dMeasuredV += ` L ${x} ${y.toFixed(1)}`;
+        }
+        let dPredictedV = "M 380 45";
+        for (let x = 380; x <= 505; x += 15) {
+            const y = 45 + Math.sin((x - 45) * 0.08 + wavePhase * 1.8) * (vAmp * 1.4);
+            dPredictedV += ` L ${x} ${y.toFixed(1)}`;
+        }
+
+        let dMeasuredI = "M 45 105";
+        for (let x = 45; x <= 380; x += 15) {
+            const y = 105 + Math.sin((x - 45) * 0.05 + wavePhase + 1.5) * iAmp;
+            dMeasuredI += ` L ${x} ${y.toFixed(1)}`;
+        }
+        let dPredictedI = "M 380 105";
+        for (let x = 380; x <= 505; x += 15) {
+            const y = 105 + Math.cos((x - 45) * 0.07 + wavePhase * 1.4) * (iAmp * 1.3);
+            dPredictedI += ` L ${x} ${y.toFixed(1)}`;
+        }
+
+        let dMeasuredVib = "M 45 165";
+        for (let x = 45; x <= 380; x += 15) {
+            const y = 165 + Math.sin((x - 45) * 0.05 + wavePhase + 3.0) * vibAmp;
+            dMeasuredVib += ` L ${x} ${y.toFixed(1)}`;
+        }
+        let dPredictedVib = "M 380 165";
+        for (let x = 380; x <= 505; x += 15) {
+            const y = 165 + Math.sin((x - 45) * 0.09 + wavePhase * 2.2) * (vibAmp * 1.5);
+            dPredictedVib += ` L ${x} ${y.toFixed(1)}`;
+        }
+
+        const cardA = document.querySelectorAll(".wave-graph-card")[0];
+        if (cardA) {
+            const measuredVEl = cardA.querySelector(".wave-path.measured-v");
+            const predictedVEl = cardA.querySelector(".wave-path.predicted-v");
+            const measuredIEl = cardA.querySelector(".wave-path.measured-i");
+            const predictedIEl = cardA.querySelector(".wave-path.predicted-i");
+            const measuredVibEl = cardA.querySelector(".wave-path.measured-vib");
+            const predictedVibEl = cardA.querySelector(".wave-path.predicted-vib");
+
+            if (measuredVEl) measuredVEl.setAttribute("d", dMeasuredV);
+            if (predictedVEl) predictedVEl.setAttribute("d", dPredictedV);
+            if (measuredIEl) measuredIEl.setAttribute("d", dMeasuredI);
+            if (predictedIEl) predictedIEl.setAttribute("d", dPredictedI);
+            if (measuredVibEl) measuredVibEl.setAttribute("d", dMeasuredVib);
+            if (predictedVibEl) predictedVibEl.setAttribute("d", dPredictedVib);
+        }
+
+        // 3. Dynamic Anomaly Peak Focus Circles Y-positions
+        const yPeakA = 45 + Math.sin((435 - 45) * 0.08 + wavePhase * 1.8) * (vAmp * 1.4);
+        const yPeakB = 105 + Math.cos((435 - 45) * 0.07 + wavePhase * 1.4) * (iAmp * 1.3);
+        const yPeakVib = 165 + Math.sin((435 - 45) * 0.09 + wavePhase * 2.2) * (vibAmp * 1.5);
+
+        const focusGroups = document.querySelectorAll(".graph-peak-focus");
+        if (focusGroups[0]) focusGroups[0].setAttribute("transform", `translate(435, ${yPeakA.toFixed(1)})`);
+        if (focusGroups[1]) focusGroups[1].setAttribute("transform", `translate(435, ${yPeakB.toFixed(1)})`);
+        if (focusGroups[2]) focusGroups[2].setAttribute("transform", `translate(435, ${yPeakVib.toFixed(1)})`);
+
+        // 4. Update Graph (c) Thermal Tension Peak
+        const dPredictedThermal = `M 380 125 L 390 125 L 395 ${thermalPeakY.toFixed(1)} L 445 ${thermalPeakY.toFixed(1)} L 450 125 L 505 125`;
+        const cardC = document.querySelectorAll(".wave-graph-card")[1];
+        if (cardC) {
+            const cardCPred = cardC.querySelector(".wave-path.predicted-v");
+            if (cardCPred) cardCPred.setAttribute("d", dPredictedThermal);
+        }
+
+        if (focusGroups[3]) focusGroups[3].setAttribute("transform", `translate(420, ${thermalPeakY.toFixed(1)})`);
+
+        // 5. Update SVG Leader Lines dynamically to track moving focal circles!
+        const lineAEl = document.querySelector(".leader-line.line-a");
+        const lineBEl = document.querySelector(".leader-line.line-b");
+        const lineCEl = document.querySelector(".leader-line.line-c");
+
+        const lineAyStart = 72 + (yPeakA * 0.55);
+        if (lineAEl) lineAEl.setAttribute("d", `M 475 ${lineAyStart.toFixed(1)} C 600 ${lineAyStart.toFixed(1)}, 680 145, 840 145`);
+
+        const lineByStart = 72 + (yPeakB * 0.55);
+        if (lineBEl) lineBEl.setAttribute("d", `M 475 ${lineByStart.toFixed(1)} C 610 ${lineByStart.toFixed(1)}, 700 230, 880 230`);
+
+        const lineCyStart = 345 + (thermalPeakY * 0.85);
+        if (lineCEl) lineCEl.setAttribute("d", `M 475 ${lineCyStart.toFixed(1)} C 610 ${lineCyStart.toFixed(1)}, 710 425, 860 425`);
+    } catch(err) {
+        console.warn("Spatial dynamic graph update skipped:", err);
+    }
+}
+
 function updateAnalytics(tel, stress) {
-    const temperatureLimit = 85;
-    const currentLimit = 15;
-    const vibrationLimit = 0.5;
-    const temperaturePercent = tel.temperature / temperatureLimit * 100;
-    const currentPercent = tel.current / currentLimit * 100;
-    analyticsHistory.temperature.push(temperaturePercent);
-    analyticsHistory.current.push(currentPercent);
-    Object.values(analyticsHistory).forEach((values) => { if (values.length > 24) values.shift(); });
+    try {
+        const temperatureLimit = 85;
+        const currentLimit = 15;
+        const vibrationLimit = 0.5;
+        const temperaturePercent = (tel.temperature / temperatureLimit) * 100;
+        const currentPercent = (tel.current / currentLimit) * 100;
+        analyticsHistory.temperature.push(temperaturePercent);
+        analyticsHistory.current.push(currentPercent);
+        if (analyticsHistory.temperature.length > 24) analyticsHistory.temperature.shift();
+        if (analyticsHistory.current.length > 24) analyticsHistory.current.shift();
 
-    const trendPath = (values) => values.map((value, index) => {
-        const x = 42 + index / Math.max(values.length - 1, 1) * 548;
-        const y = 136 - clamp(value, 0, 100) / 100 * 116;
-        return `${index ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    }).join(" ");
-    $("temperatureTrend").setAttribute("d", trendPath(analyticsHistory.temperature));
-    $("currentTrend").setAttribute("d", trendPath(analyticsHistory.current));
-    $("analyticsTemp").textContent = `${fmt(tel.temperature, 1)} °C · ${fmt(temperaturePercent, 0)}%`;
-    $("analyticsCurrent").textContent = `${fmt(tel.current, 1)} A · ${fmt(currentPercent, 0)}%`;
-    $("analyticsUpdated").textContent = `Updated ${nowTime()}`;
+        const trendPath = (values) => values.map((value, index) => {
+            const x = 42 + (index / Math.max(values.length - 1, 1)) * 548;
+            const y = 136 - (clamp(value, 0, 100) / 100) * 116;
+            return `${index ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+        }).join(" ");
 
-    const readings = [
-        { name: "Voltage deviation", value: tel.voltage, unit: "V", percent: Math.abs(tel.voltage - CONFIG.nominalVoltage) / (CONFIG.nominalVoltage * 0.1) * 100, detail: "230 V nominal · ±10% band", status: Math.abs(tel.voltage - CONFIG.nominalVoltage) > CONFIG.nominalVoltage * 0.1 ? "warning" : "healthy" },
-        { name: "Load current", value: tel.current, unit: "A", percent: currentPercent, detail: "15 A limit", status: currentPercent >= 100 ? "critical" : currentPercent >= 85 ? "warning" : "healthy" },
-        { name: "Winding temperature", value: tel.temperature, unit: "°C", percent: temperaturePercent, detail: "85 °C trip", status: temperaturePercent >= 100 ? "critical" : temperaturePercent >= 85 ? "warning" : "healthy" },
-        { name: "Vibration", value: tel.vibration, unit: "g", percent: tel.vibration / vibrationLimit * 100, detail: "0.50 g limit", status: tel.vibration >= vibrationLimit ? "critical" : tel.vibration >= vibrationLimit * 0.8 ? "warning" : "healthy" }
-    ];
-    const ticks = (values) => values.map((tick) => `<span>${tick}%</span>`).join("");
-    const utilizationBars = readings.map((item) => {
-        const width = clamp(item.percent, 0, 120) / 120 * 100;
-        const color = item.status === "critical" ? "#ef4444" : item.status === "warning" ? "#f59e0b" : "#22c55e";
-        const status = item.status === "healthy" ? "Normal" : item.status === "warning" ? "Near limit" : "At / over limit";
-        return `<div class="bar-chart-row"><div class="bar-chart-name"><strong>${item.name}</strong><small>${fmt(item.value, item.unit === "g" ? 3 : 1)} ${item.unit} · ${item.detail}</small></div><div class="bar-plot limit-plot" role="img" aria-label="${item.name}: ${fmt(item.percent, 0)} percent of reference, ${status}"><span style="width:${width.toFixed(1)}%;background:${color}"></span></div><strong class="bar-chart-value">${fmt(item.percent, 0)}%</strong></div>`;
-    }).join("");
-    $("utilizationChart").innerHTML = `<div class="bar-chart-axis-row"><span></span><div class="bar-chart-axis">${ticks([0, 50, 100, 120])}</div><span></span></div>${utilizationBars}`;
+        const tempTrend = $("temperatureTrend");
+        if (tempTrend) tempTrend.setAttribute("d", trendPath(analyticsHistory.temperature));
+        const currTrend = $("currentTrend");
+        if (currTrend) currTrend.setAttribute("d", trendPath(analyticsHistory.current));
 
-    const oilPenalty = tel.oil_level !== "NORMAL" ? 40 : 0;
-    const components = [
-        { name: "HV & LV bushings", score: clamp(100 - Math.abs(tel.voltage - CONFIG.nominalVoltage) * 0.8 - tel.vibration * 15, 0, 100) },
-        { name: "Winding assembly", score: clamp(100 - (tel.temperature - CONFIG.nominalTemperature) * 1.8 - Math.abs(tel.current - CONFIG.nominalCurrent) * 4, 0, 100) },
-        { name: "Oil & cooling", score: clamp(100 - (tel.temperature - CONFIG.nominalTemperature) * 1.2 - oilPenalty, 0, 100) },
-        { name: "Paper insulation", score: clamp(stress.thi * 0.95, 0, 100) }
-    ];
-    const componentBars = components.map(({ name, score }) => {
-        const status = score < 40 ? "critical" : score < 70 ? "warning" : "healthy";
-        const label = status === "healthy" ? "Healthy" : status === "warning" ? "Warning" : "Critical";
-        const color = status === "critical" ? "#ef4444" : status === "warning" ? "#f59e0b" : "#22c55e";
-        return `<div class="bar-chart-row"><div class="bar-chart-name"><strong>${name}</strong><small style="color:${color}">${label}</small></div><div class="bar-plot component-plot" role="img" aria-label="${name}: ${fmt(score, 0)} percent, ${label}"><span style="width:${score.toFixed(1)}%;background:${color}"></span><i class="health-threshold threshold-warning"></i><i class="health-threshold threshold-healthy"></i></div><strong class="bar-chart-value">${fmt(score, 0)}%</strong></div>`;
-    }).join("");
-    $("componentChart").innerHTML = `<div class="bar-chart-axis-row component-axis-row"><span></span><div class="bar-chart-axis">${ticks([0, 25, 50, 75, 100])}</div><span></span></div>${componentBars}`;
+        if ($("analyticsTemp")) $("analyticsTemp").textContent = `${fmt(tel.temperature, 1)} °C · ${fmt(temperaturePercent, 0)}%`;
+        if ($("analyticsCurrent")) $("analyticsCurrent").textContent = `${fmt(tel.current, 1)} A · ${fmt(currentPercent, 0)}%`;
+        if ($("analyticsUpdated")) $("analyticsUpdated").textContent = `Updated ${nowTime()}`;
+
+        const readings = [
+            { name: "Voltage deviation", value: tel.voltage, unit: "V", percent: Math.abs(tel.voltage - CONFIG.nominalVoltage) / (CONFIG.nominalVoltage * 0.1) * 100, detail: "230 V nominal · ±10% band", status: Math.abs(tel.voltage - CONFIG.nominalVoltage) > CONFIG.nominalVoltage * 0.1 ? "warning" : "healthy" },
+            { name: "Load current", value: tel.current, unit: "A", percent: currentPercent, detail: "15 A limit", status: currentPercent >= 100 ? "critical" : currentPercent >= 85 ? "warning" : "healthy" },
+            { name: "Winding temperature", value: tel.temperature, unit: "°C", percent: temperaturePercent, detail: "85 °C trip", status: temperaturePercent >= 100 ? "critical" : temperaturePercent >= 85 ? "warning" : "healthy" },
+            { name: "Vibration", value: tel.vibration, unit: "g", percent: (tel.vibration / vibrationLimit) * 100, detail: "0.50 g limit", status: tel.vibration >= vibrationLimit ? "critical" : tel.vibration >= vibrationLimit * 0.8 ? "warning" : "healthy" }
+        ];
+        const ticks = (values) => values.map((tick) => `<span>${tick}%</span>`).join("");
+        const utilizationBars = readings.map((item) => {
+            const width = (clamp(item.percent, 0, 120) / 120) * 100;
+            const color = item.status === "critical" ? "#ef4444" : item.status === "warning" ? "#f59e0b" : "#22c55e";
+            const status = item.status === "healthy" ? "Normal" : item.status === "warning" ? "Near limit" : "At / over limit";
+            return `<div class="bar-chart-row"><div class="bar-chart-name"><strong>${item.name}</strong><small>${fmt(item.value, item.unit === "g" ? 3 : 1)} ${item.unit} · ${item.detail}</small></div><div class="bar-plot limit-plot" role="img" aria-label="${item.name}: ${fmt(item.percent, 0)} percent of reference, ${status}"><span style="width:${width.toFixed(1)}%;background:${color}"></span></div><strong class="bar-chart-value">${fmt(item.percent, 0)}%</strong></div>`;
+        }).join("");
+        if ($("utilizationChart")) $("utilizationChart").innerHTML = `<div class="bar-chart-axis-row"><span></span><div class="bar-chart-axis">${ticks([0, 50, 100, 120])}</div><span></span></div>${utilizationBars}`;
+
+        const oilPenalty = tel.oil_level !== "NORMAL" ? 40 : 0;
+        const thiVal = (stress && typeof stress.thi === "number") ? stress.thi : 95.0;
+        const components = [
+            { name: "HV & LV bushings", score: clamp(100 - Math.abs(tel.voltage - CONFIG.nominalVoltage) * 0.8 - (tel.vibration || 0.05) * 15, 0, 100), metric: `${fmt(tel.voltage, 1)} V` },
+            { name: "Winding assembly & Core", score: clamp(100 - (tel.temperature - CONFIG.nominalTemperature) * 1.8 - Math.abs(tel.current - CONFIG.nominalCurrent) * 4, 0, 100), metric: `${fmt(tel.temperature, 1)} °C` },
+            { name: "Oil & cooling radiators", score: clamp(100 - (tel.temperature - CONFIG.nominalTemperature) * 1.2 - oilPenalty, 0, 100), metric: `Oil ${tel.oil_level || "NORMAL"}` },
+            { name: "Paper insulation (Kraft)", score: clamp(thiVal * 0.95, 0, 100), metric: `${fmt(thiVal, 1)} THI` },
+            { name: "Mechanical Shock Mounts", score: clamp(100 - (tel.vibration || 0.05) * 120, 0, 100), metric: `${fmt(tel.vibration || 0.05, 3)} g` }
+        ];
+        const componentBars = components.map(({ name, score, metric }) => {
+            const status = score < 40 ? "critical" : score < 70 ? "warning" : "healthy";
+            const label = status === "healthy" ? "Optimal Condition" : status === "warning" ? "Degraded Margin" : "Critical Attention";
+            const color = status === "critical" ? "#ef4444" : status === "warning" ? "#f59e0b" : "#22c55e";
+            return `<div class="bar-chart-row"><div class="bar-chart-name"><strong>${name}</strong><small style="color:${color}">${label} · <span style="color:var(--muted)">${metric}</span></small></div><div class="bar-plot component-plot" role="img" aria-label="${name}: ${fmt(score, 0)} percent, ${label}"><span style="width:${score.toFixed(1)}%;background:${color}"></span><i class="health-threshold threshold-warning"></i><i class="health-threshold threshold-healthy"></i></div><strong class="bar-chart-value">${fmt(score, 0)}%</strong></div>`;
+        }).join("");
+        if ($("componentChart")) $("componentChart").innerHTML = `<div class="bar-chart-axis-row component-axis-row"><span></span><div class="bar-chart-axis">${ticks([0, 25, 50, 75, 100])}</div><span></span></div>${componentBars}`;
+    } catch(err) {
+        console.error("Error in updateAnalytics:", err);
+    }
 }
 
 function render(payload) {
+    if (!payload) return;
     latestPayload = payload;
     const { telemetry: tel, stress, protection, environmental: env, prediction, lora } = payload;
-    const tripped = protection.is_tripped;
+    const tripped = protection && protection.is_tripped;
 
-    if ($("thiValue")) $("thiValue").textContent = fmt(stress.thi, 1);
-    if ($("healthStatus")) $("healthStatus").textContent = stress.health_status;
-    if ($("rulValue")) $("rulValue").textContent = fmt(prediction.rul_years, 1);
-    if ($("serviceDate")) $("serviceDate").textContent = prediction.projected_service_date;
-    if ($("relayState")) $("relayState").textContent = protection.relay_state;
-    if ($("tripReason")) $("tripReason").textContent = protection.trip_reason;
+    try {
+        if ($("thiValue")) $("thiValue").textContent = fmt(stress.thi, 1);
+        if ($("healthStatus")) $("healthStatus").textContent = stress.health_status;
+        if ($("rulValue")) $("rulValue").textContent = fmt(prediction.rul_years, 1);
+        if ($("serviceDate")) $("serviceDate").textContent = prediction.projected_service_date;
+        if ($("relayState")) $("relayState").textContent = protection.relay_state;
+        if ($("tripReason")) $("tripReason").textContent = protection.trip_reason;
 
-    setRing(stress.thi);
-    setStress("sv", stress.s_v);
-    setStress("si", stress.s_i);
-    setStress("st", stress.s_t);
-    setStress("svib", stress.s_vib);
+        setRing(stress.thi);
+        setStress("sv", stress.s_v);
+        setStress("si", stress.s_i);
+        setStress("st", stress.s_t);
+        setStress("svib", stress.s_vib);
 
-    if ($("voltageValue")) $("voltageValue").textContent = `${fmt(tel.voltage, 1)} V`;
-    if ($("currentValue")) $("currentValue").textContent = `${fmt(tel.current, 1)} A`;
-    if ($("temperatureValue")) $("temperatureValue").textContent = `${fmt(tel.temperature, 1)} C`;
-    if ($("vibrationValue")) $("vibrationValue").textContent = `${fmt(tel.vibration, 3)} g`;
-    updateSignalGraphs(tel);
+        if ($("voltageValue")) $("voltageValue").textContent = `${fmt(tel.voltage, 1)} V`;
+        if ($("currentValue")) $("currentValue").textContent = `${fmt(tel.current, 1)} A`;
+        if ($("temperatureValue")) $("temperatureValue").textContent = `${fmt(tel.temperature, 1)} C`;
+        if ($("vibrationValue")) $("vibrationValue").textContent = `${fmt(tel.vibration, 3)} g`;
+        updateSignalGraphs(tel);
+    } catch(e) { console.error("Error in core telemetry render:", e); }
 
+    // Execute Module Analytics & Subsystem condition bars
+    updateAnalytics(tel, stress);
+
+    // Execute Environmental Risk Fusion
     renderEnvironmentalRiskFusion(env, tel);
 
-    // Update LoRa Communication Telemetry (Module 04)
-    if (lora) {
-        if ($("loraFreq")) $("loraFreq").textContent = `${lora.frequency} · ${lora.spreading_factor}`;
-        if ($("loraLinkQuality")) $("loraLinkQuality").textContent = `RSSI: ${fmt(lora.rssi, 1)} dBm | SNR: ${fmt(lora.snr, 1)} dB`;
-        if ($("loraFrameCount")) $("loraFrameCount").textContent = `${lora.packet_count || history.length} frames`;
-        if ($("loraStatusBadge")) {
-            $("loraStatusBadge").textContent = `SX1278 ${lora.gateway_status ? "ONLINE" : "STANDBY"}`;
-        }
-    }
-
-    const dangerAwareEl = document.querySelector(".danger-aware");
-    if (dangerAwareEl) dangerAwareEl.classList.toggle(tripped ? "tripped" : "");
-
-    const twinPanelEl = document.querySelector(".twin-panel");
-    if (twinPanelEl) twinPanelEl.classList.toggle(tripped ? "tripped" : "");
-
-    if ($("maintenanceMode")) $("maintenanceMode").textContent = tripped ? "Corrective" : "Predictive";
-
-    updateTwin(tel, protection);
-    renderParts(partsForecast(tel, stress, env));
-    renderTimeline(payload);
-    updateSummary(payload);
-    updateSpatialDynamicGraphs(tel, stress);
-    updateAnalytics(tel, stress);
+    // Execute Status & Performance Cockpit
     renderStatusAndPerformance(payload);
+
+    try {
+        // Update LoRa Communication Telemetry (Module 04)
+        if (lora) {
+            if ($("loraFreq")) $("loraFreq").textContent = `${lora.frequency} · ${lora.spreading_factor}`;
+            if ($("loraLinkQuality")) $("loraLinkQuality").textContent = `RSSI: ${fmt(lora.rssi, 1)} dBm | SNR: ${fmt(lora.snr, 1)} dB`;
+            if ($("loraFrameCount")) $("loraFrameCount").textContent = `${lora.packet_count || history.length} frames`;
+            if ($("loraStatusBadge")) {
+                $("loraStatusBadge").textContent = `SX1278 ${lora.gateway_status ? "ONLINE" : "STANDBY"}`;
+            }
+        }
+
+        const dangerAwareEl = document.querySelector(".danger-aware");
+        if (dangerAwareEl) dangerAwareEl.classList.toggle(tripped ? "tripped" : "");
+
+        const twinPanelEl = document.querySelector(".twin-panel");
+        if (twinPanelEl) twinPanelEl.classList.toggle(tripped ? "tripped" : "");
+
+        if ($("maintenanceMode")) $("maintenanceMode").textContent = tripped ? "Corrective" : "Predictive";
+
+        updateTwin(tel, protection);
+        renderParts(partsForecast(tel, stress, env));
+        renderTimeline(payload);
+        updateSummary(payload);
+        updateSpatialDynamicGraphs(tel, stress);
+    } catch(e) { console.error("Error in auxiliary UI updates:", e); }
 }
 
 function renderEnvironmentalRiskFusion(env, tel) {
@@ -704,6 +832,62 @@ function renderEnvironmentalRiskFusion(env, tel) {
     if ($("envActionTitle")) $("envActionTitle").textContent = env.severity || "Preventative Baseline";
     if ($("riskDescription")) {
         $("riskDescription").textContent = `${env.description || ""} ${env.mitigation_action ? "• " + env.mitigation_action : ""}`;
+    }
+
+    // Update Live Environmental Kinetics SVG Trend Graph
+    updateEnvTrendGraph(rustPct, seismicPct, rh, amb);
+}
+
+const envTrendHistory = { rust: [], seismic: [], rh: [], temp: [] };
+
+function updateEnvTrendGraph(rustPct, seismicPct, rh, temp) {
+    try {
+        envTrendHistory.rust.push(rustPct);
+        envTrendHistory.seismic.push(seismicPct);
+        envTrendHistory.rh.push(rh);
+        envTrendHistory.temp.push((temp / 50.0) * 100); // normalize 0-50°C to 0-100%
+
+        if (envTrendHistory.rust.length > 25) envTrendHistory.rust.shift();
+        if (envTrendHistory.seismic.length > 25) envTrendHistory.seismic.shift();
+        if (envTrendHistory.rh.length > 25) envTrendHistory.rh.shift();
+        if (envTrendHistory.temp.length > 25) envTrendHistory.temp.shift();
+
+        const n = Math.max(envTrendHistory.rust.length - 1, 1);
+        const toPath = (arr) => arr.map((val, idx) => {
+            const x = 40 + (idx / n) * 550;
+            const y = 115 - (clamp(val, 0, 100) / 100) * 100;
+            return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+        }).join(' ');
+
+        const toArea = (arr) => {
+            if (arr.length < 2) return '';
+            const pts = arr.map((val, idx) => {
+                const x = 40 + (idx / n) * 550;
+                const y = 115 - (clamp(val, 0, 100) / 100) * 100;
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
+            return `${pts} ${40 + 550},115 40,115`;
+        };
+
+        const rustPathEl = $("envRustTrendPath");
+        if (rustPathEl) rustPathEl.setAttribute("d", toPath(envTrendHistory.rust));
+
+        const seismicPathEl = $("envSeismicTrendPath");
+        if (seismicPathEl) seismicPathEl.setAttribute("d", toPath(envTrendHistory.seismic));
+
+        const rhPathEl = $("envRhTrendPath");
+        if (rhPathEl) rhPathEl.setAttribute("d", toPath(envTrendHistory.rh));
+
+        const tempPathEl = $("envTempTrendPath");
+        if (tempPathEl) tempPathEl.setAttribute("d", toPath(envTrendHistory.temp));
+
+        const rustAreaEl = $("envRustArea");
+        if (rustAreaEl) rustAreaEl.setAttribute("points", toArea(envTrendHistory.rust));
+
+        const seismicAreaEl = $("envSeismicArea");
+        if (seismicAreaEl) seismicAreaEl.setAttribute("points", toArea(envTrendHistory.seismic));
+    } catch(err) {
+        console.warn("Env trend graph update skipped:", err);
     }
 }
 

@@ -700,6 +700,52 @@
                         </div>
                     </div>
 
+                    <!-- Live Environmental Waveform & Kinetics Trend Graph -->
+                    <div class="env-chart-container mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-warning text-dark font-monospace">LIVE KINETICS GRAPH</span>
+                                <strong class="small text-white">Atmospheric Rust & Seismic Motion Dynamic Trend (Last 25 frames)</strong>
+                            </div>
+                            <div class="env-chart-legend">
+                                <span><i class="dot-rust"></i> Rust Risk (%)</span>
+                                <span><i class="dot-seismic"></i> Seismic Shock (%)</span>
+                                <span><i class="dot-rh"></i> Humidity (%)</span>
+                                <span><i class="dot-temp"></i> Temp (°C)</span>
+                            </div>
+                        </div>
+                        <div class="env-svg-wrapper">
+                            <svg class="env-trend-svg" id="envTrendSvg" viewBox="0 0 600 150" preserveAspectRatio="none">
+                                <defs>
+                                    <linearGradient id="gradRustArea" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25"/>
+                                        <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0"/>
+                                    </linearGradient>
+                                    <linearGradient id="gradSeismicArea" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#ec4899" stop-opacity="0.25"/>
+                                        <stop offset="100%" stop-color="#ec4899" stop-opacity="0.0"/>
+                                    </linearGradient>
+                                </defs>
+                                <line class="chart-gridline" x1="40" y1="15" x2="590" y2="15"/>
+                                <line class="chart-gridline" x1="40" y1="65" x2="590" y2="65"/>
+                                <line class="chart-gridline" x1="40" y1="115" x2="590" y2="115"/>
+                                <text class="chart-axis-label" x="32" y="20" text-anchor="end">100%</text>
+                                <text class="chart-axis-label" x="32" y="70" text-anchor="end">50%</text>
+                                <text class="chart-axis-label" x="32" y="120" text-anchor="end">0%</text>
+
+                                <!-- Area fills -->
+                                <polygon id="envRustArea" fill="url(#gradRustArea)"/>
+                                <polygon id="envSeismicArea" fill="url(#gradSeismicArea)"/>
+
+                                <!-- Trend Lines -->
+                                <path id="envRustTrendPath" class="env-trend-line" stroke="#f59e0b" stroke-width="2.5" fill="none"/>
+                                <path id="envSeismicTrendPath" class="env-trend-line" stroke="#ec4899" stroke-width="2.5" fill="none"/>
+                                <path id="envRhTrendPath" class="env-trend-line" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="4,3" fill="none"/>
+                                <path id="envTempTrendPath" class="env-trend-line" stroke="#f97316" stroke-width="1.8" fill="none"/>
+                            </svg>
+                        </div>
+                    </div>
+
                     <!-- Actionable Advisory & Physics Summary -->
                     <div class="env-advisory-box mt-3">
                         <div class="d-flex align-items-center gap-2 mb-1">
