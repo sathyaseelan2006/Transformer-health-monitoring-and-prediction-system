@@ -109,10 +109,12 @@ def get_component_health():
     return component_predictions
 
 @app.get("/api/telemetry")
-def get_telemetry():
+def get_telemetry(scenario: Optional[str] = None):
     global active_custom_override, active_mode
     # 1. Acquire telemetry frame
-    if active_mode == "ESP32_WIFI" and esp32_latest_frame:
+    if scenario:
+        frame = simulator.generate_frame(fault_override=scenario)
+    elif active_mode == "ESP32_WIFI" and esp32_latest_frame:
         # Check if ESP32 frame is recent (within 10 seconds)
         if esp32_last_heartbeat and (datetime.now() - esp32_last_heartbeat).total_seconds() < 10.0:
             frame = esp32_latest_frame
@@ -124,7 +126,6 @@ def get_telemetry():
         if not frame:
             frame = simulator.generate_frame("NORMAL")
     elif active_custom_override:
-
         c = active_custom_override
         frame = TelemetryFrame(
             timestamp=datetime.now(),
@@ -136,6 +137,7 @@ def get_telemetry():
             ambient_temp=float(c.get("ambient_temp", 28.0)),
             rel_humidity=float(c.get("rel_humidity", 45.0)),
             wind_speed=float(c.get("wind_speed", 12.0)),
+            motion_shake=float(c.get("motion_shake", c.get("vibration", 0.05))),
             device_id="STM32-TX01"
         )
     else:
@@ -153,6 +155,7 @@ def get_telemetry():
         transformer_temp=frame.temperature,
         ambient_temp=frame.ambient_temp,
         rel_humidity=frame.rel_humidity,
+        motion_shake=getattr(frame, 'motion_shake', frame.vibration),
         wind_speed=frame.wind_speed,
         oil_level=frame.oil_level
     )
@@ -232,9 +235,18 @@ def get_telemetry():
         },
         "environmental_risk": {
             "fwi": env_risk.fire_weather_index,
+            "fused_risk_score": env_risk.fused_risk_score,
             "level": env_risk.risk_level,
             "severity": env_risk.consequence_severity,
-            "description": env_risk.description
+            "description": env_risk.description,
+            "rust_corrosion_risk": env_risk.rust_corrosion_risk,
+            "seismic_shake_risk": env_risk.seismic_shake_risk,
+            "thermal_ambient_risk": env_risk.thermal_ambient_risk,
+            "dew_point_temp": env_risk.dew_point_temp,
+            "condensation_status": env_risk.condensation_status,
+            "seismic_status": env_risk.seismic_status,
+            "corrosion_rate_category": env_risk.corrosion_rate_category,
+            "mitigation_action": env_risk.mitigation_action
         },
         "protection": {
             "is_tripped": prot.is_tripped,
@@ -276,7 +288,8 @@ def get_status_and_performance():
 
     stress = analytics.compute_stress_and_thi(frame.voltage, frame.current, frame.temperature, frame.vibration)
     env_risk = analytics.evaluate_environmental_risk_fusion(
-        frame.temperature, frame.ambient_temp, frame.rel_humidity, frame.wind_speed, frame.oil_level
+        frame.temperature, frame.ambient_temp, frame.rel_humidity,
+        getattr(frame, 'motion_shake', frame.vibration), frame.wind_speed, frame.oil_level
     )
     prot = analytics.evaluate_deterministic_protection(
         frame.voltage, frame.current, frame.temperature, frame.vibration, frame.oil_level

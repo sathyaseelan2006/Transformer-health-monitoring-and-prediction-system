@@ -13,23 +13,31 @@ const CONFIG = {
 const scenarios = [
     {
         name: "Normal Baseline",
-        telemetry: { voltage: 231.2, current: 9.8, temperature: 33.4, vibration: 0.052, oil_level: "NORMAL", ambient_temp: 28.2, rel_humidity: 48, wind_speed: 11.6 }
+        telemetry: { voltage: 231.2, current: 9.8, temperature: 33.4, vibration: 0.052, motion_shake: 0.05, oil_level: "NORMAL", ambient_temp: 28.2, rel_humidity: 48, wind_speed: 11.6 }
+    },
+    {
+        name: "Earthquake / Seismic Shake",
+        telemetry: { voltage: 227.0, current: 10.8, temperature: 39.0, vibration: 0.54, motion_shake: 0.52, oil_level: "NORMAL", ambient_temp: 29.0, rel_humidity: 58, wind_speed: 14.0 }
+    },
+    {
+        name: "High Humidity Rust Hazard",
+        telemetry: { voltage: 230.0, current: 9.5, temperature: 36.0, vibration: 0.06, motion_shake: 0.05, oil_level: "NORMAL", ambient_temp: 34.0, rel_humidity: 89, wind_speed: 6.0 }
     },
     {
         name: "Overload Drift",
-        telemetry: { voltage: 226.8, current: 16.7, temperature: 67.5, vibration: 0.18, oil_level: "NORMAL", ambient_temp: 32.0, rel_humidity: 41, wind_speed: 14.2 }
+        telemetry: { voltage: 226.8, current: 16.7, temperature: 67.5, vibration: 0.18, motion_shake: 0.15, oil_level: "NORMAL", ambient_temp: 32.0, rel_humidity: 41, wind_speed: 14.2 }
     },
     {
         name: "Thermal Runaway",
-        telemetry: { voltage: 229.5, current: 13.8, temperature: 91.0, vibration: 0.14, oil_level: "LOW", ambient_temp: 39.4, rel_humidity: 24, wind_speed: 21.0 }
+        telemetry: { voltage: 229.5, current: 13.8, temperature: 91.0, vibration: 0.14, motion_shake: 0.12, oil_level: "LOW", ambient_temp: 39.4, rel_humidity: 24, wind_speed: 21.0 }
     },
     {
         name: "Vibration Anomaly",
-        telemetry: { voltage: 232.4, current: 10.9, temperature: 46.5, vibration: 0.64, oil_level: "NORMAL", ambient_temp: 29.6, rel_humidity: 52, wind_speed: 16.8 }
+        telemetry: { voltage: 232.4, current: 10.9, temperature: 46.5, vibration: 0.64, motion_shake: 0.60, oil_level: "NORMAL", ambient_temp: 29.6, rel_humidity: 52, wind_speed: 16.8 }
     },
     {
         name: "Wildfire Exposure",
-        telemetry: { voltage: 236.0, current: 12.3, temperature: 74.2, vibration: 0.16, oil_level: "LOW", ambient_temp: 43.8, rel_humidity: 13, wind_speed: 38.0 }
+        telemetry: { voltage: 236.0, current: 12.3, temperature: 74.2, vibration: 0.16, motion_shake: 0.10, oil_level: "LOW", ambient_temp: 43.8, rel_humidity: 13, wind_speed: 38.0 }
     }
 ];
 
@@ -85,31 +93,69 @@ function calculateProtection(tel) {
 }
 
 function calculateEnvironmentalRisk(tel) {
-    const heat = clamp((tel.ambient_temp - 25) / 20, 0, 1) * 35;
-    const dryness = clamp((55 - tel.rel_humidity) / 45, 0, 1) * 30;
-    const wind = clamp(tel.wind_speed / 45, 0, 1) * 22;
-    const transformerHeat = clamp((tel.temperature - 55) / 35, 0, 1) * 13;
-    const oilPenalty = tel.oil_level === "LOW" ? 8 : tel.oil_level === "CRITICAL" ? 16 : 0;
-    const fwi = clamp(heat + dryness + wind + transformerHeat + oilPenalty, 0, 100);
-    let level = "LOW";
-    let severity = "Contained";
-    let description = "Ambient humidity and temperature are within normal operating margins.";
+    const amb = tel.ambient_temp || 28.0;
+    const rh = tel.rel_humidity || 50.0;
+    const motion = tel.motion_shake || tel.vibration || 0.05;
 
-    if (fwi >= 75) {
+    // Dew point (Magnus-Tetens formula)
+    const dewPoint = Math.round((amb - ((100.0 - rh) / 5.0)) * 10) / 10;
+    const dewMargin = amb - dewPoint;
+    const condFactor = dewMargin <= 2.0 || rh >= 85.0 ? 1.45 : (dewMargin <= 4.0 || rh >= 70.0 ? 1.25 : 1.0);
+    const condStatus = dewMargin <= 2.0 || rh >= 85.0 ? "ACTIVE CONDENSATION (HIGH RUST)" : (dewMargin <= 4.0 || rh >= 70.0 ? "ELEVATED DEW RISK" : "DRY / SAFE");
+
+    // Rust & Corrosion risk (ISO 9223 kinetics)
+    const rhFactor = clamp((rh - 40.0) / 50.0, 0, 1);
+    const tempFactor = clamp((amb - 10.0) / 35.0, 0.1, 1);
+    const rustRisk = Math.min(100.0, Math.round(((0.65 * rhFactor + 0.35 * tempFactor) * 100.0 * condFactor) * 10) / 10);
+    const corrosionCat = rustRisk > 75.0 ? "AGGRESSIVE (ISO C4/C5)" : (rustRisk > 45.0 ? "MODERATE (ISO C3)" : "MINIMAL (ISO C1/C2)");
+
+    // Seismic & motion shake structural damage risk
+    const shakeRisk = Math.min(100.0, Math.round(((motion / 0.50) * 100.0) * 10) / 10);
+    const seismicStatus = motion >= 0.45 ? "CRITICAL SEISMIC SHOCK" : (motion >= 0.20 ? "EARTHQUAKE TREMOR (M 3-4.5)" : (motion >= 0.08 ? "MILD MECHANICAL SHAKE" : "QUIET / STABLE"));
+
+    // Thermal ambient degradation
+    const thermalRisk = Math.min(100.0, Math.max(0, Math.round(((amb - 25.0) / 25.0 * 100.0) * 10) / 10));
+
+    // Fused Score (0.45 Rust + 0.40 Seismic + 0.15 Thermal)
+    const fusedScore = Math.round((0.45 * rustRisk + 0.40 * shakeRisk + 0.15 * thermalRisk) * 10) / 10;
+
+    let level = "LOW";
+    let severity = "CONTAINED / OPTIMAL";
+    let description = "Dry surroundings, minimal rust kinetics, stable foundation with no seismic motion.";
+    let action = "All environmental parameters optimal. Continue automated monitoring.";
+
+    if (fusedScore >= 75.0 || shakeRisk >= 80.0 || rustRisk >= 85.0) {
         level = "EXTREME";
-        severity = "Wildfire disaster risk";
-        description = "Hot, dry, windy conditions amplify the consequence of arcing, overheating, or insulation failure.";
-    } else if (fwi >= 55) {
+        severity = "SEVERE DAMAGE HAZARD";
+        description = `Severe multi-factor threat: ${seismicStatus.toLowerCase()} and ${corrosionCat.toLowerCase()}.`;
+        action = "Dispatch immediate emergency inspection: check anchor bolts, radiator fin oxidation, and foundation dampeners.";
+    } else if (fusedScore >= 50.0) {
         level = "HIGH";
-        severity = "Elevated hazard";
-        description = "Environmental exposure is high enough to raise maintenance priority above health index alone.";
-    } else if (fwi >= 35) {
+        severity = "ELEVATED HAZARD";
+        description = `High environmental stress: ${seismicStatus.toLowerCase()}, rust potential ${rustRisk}%.`;
+        action = "Schedule preventative tank recoating, verify anti-vibration mountings, and inspect enclosure seals.";
+    } else if (fusedScore >= 25.0) {
         level = "MODERATE";
-        severity = "Watch condition";
-        description = "Site conditions warrant closer observation if transformer stress continues to rise.";
+        severity = "MODERATE EXPOSURE";
+        description = `Moderate ambient exposure: ${corrosionCat.toLowerCase()}, stable foundation.`;
+        action = "Routine environmental monitoring; ensure proper enclosure drainage and ventilation.";
     }
 
-    return { fwi, level, severity, description };
+    return {
+        fwi: fusedScore,
+        fused_risk_score: fusedScore,
+        level,
+        severity,
+        description,
+        rust_corrosion_risk: rustRisk,
+        seismic_shake_risk: shakeRisk,
+        thermal_ambient_risk: thermalRisk,
+        dew_point_temp: dewPoint,
+        condensation_status: condStatus,
+        seismic_status: seismicStatus,
+        corrosion_rate_category: corrosionCat,
+        mitigation_action: action
+    };
 }
 
 function calculatePrediction(stress) {
@@ -567,16 +613,7 @@ function render(payload) {
     if ($("vibrationValue")) $("vibrationValue").textContent = `${fmt(tel.vibration, 3)} g`;
     updateSignalGraphs(tel);
 
-    if ($("riskLevel")) {
-        $("riskLevel").textContent = env.level;
-        $("riskLevel").className = `risk-pill ${env.level.toLowerCase()}`;
-    }
-    if ($("fwiValue")) $("fwiValue").textContent = fmt(env.fwi, 1);
-    if ($("riskMeter")) $("riskMeter").style.width = `${clamp(env.fwi, 0, 100)}%`;
-    if ($("ambientValue")) $("ambientValue").textContent = `${fmt(tel.ambient_temp, 1)} C`;
-    if ($("humidityValue")) $("humidityValue").textContent = `${fmt(tel.rel_humidity, 0)}%`;
-    if ($("windValue")) $("windValue").textContent = `${fmt(tel.wind_speed, 1)} km/h`;
-    if ($("riskDescription")) $("riskDescription").textContent = `${env.severity}. ${env.description}`;
+    renderEnvironmentalRiskFusion(env, tel);
 
     // Update LoRa Communication Telemetry (Module 04)
     if (lora) {
@@ -603,6 +640,71 @@ function render(payload) {
     updateSpatialDynamicGraphs(tel, stress);
     updateAnalytics(tel, stress);
     renderStatusAndPerformance(payload);
+}
+
+function renderEnvironmentalRiskFusion(env, tel) {
+    if (!env) return;
+    const score = env.fused_risk_score !== undefined ? env.fused_risk_score : (env.fwi || 0);
+    const level = env.level || "LOW";
+
+    // Overall Fused Score & Dial
+    if ($("envFusedScore")) $("envFusedScore").textContent = fmt(score, 1);
+    if ($("riskLevel")) {
+        $("riskLevel").textContent = `${level} RISK`;
+        $("riskLevel").className = `risk-pill ${level.toLowerCase()}`;
+    }
+    if ($("envConsequenceSeverity")) $("envConsequenceSeverity").textContent = env.severity || "CONTAINED / OPTIMAL";
+    if ($("envKineticsBadge")) $("envKineticsBadge").textContent = env.corrosion_rate_category || "ISO 9223 Class: C1 Passivated";
+
+    const dial = $("envDialFill");
+    if (dial) {
+        const circumference = 402.12; // 2 * PI * 64
+        const offset = circumference - (circumference * clamp(score, 0, 100) / 100);
+        dial.style.strokeDashoffset = offset;
+        dial.style.stroke = level === "EXTREME" ? "var(--red)" : level === "HIGH" ? "var(--amber)" : level === "MODERATE" ? "var(--cyan)" : "var(--green)";
+    }
+
+    // Physical Sensor Trio (Prototype Inputs)
+    const amb = tel.ambient_temp !== undefined ? tel.ambient_temp : 28.0;
+    const rh = tel.rel_humidity !== undefined ? tel.rel_humidity : 50.0;
+    const motion = tel.motion_shake !== undefined ? tel.motion_shake : (tel.vibration || 0.05);
+
+    if ($("envAmbientTemp")) $("envAmbientTemp").textContent = `${fmt(amb, 1)} °C`;
+    if ($("envDewPoint")) $("envDewPoint").textContent = `${fmt(env.dew_point_temp || (amb - (100 - rh)/5), 1)} °C`;
+    if ($("envRelHumidity")) $("envRelHumidity").textContent = `${fmt(rh, 0)} %`;
+    
+    if ($("envCondensationBadge")) {
+        $("envCondensationBadge").textContent = env.condensation_status || (rh > 75 ? "ACTIVE CONDENSATION" : "DRY / SAFE");
+        $("envCondensationBadge").className = `badge bg-dark border ${rh > 75 ? "text-danger border-danger" : rh > 60 ? "text-warning border-warning" : "text-success border-success"}`;
+    }
+
+    if ($("envMotionShake")) $("envMotionShake").textContent = `${fmt(motion, 3)} g`;
+    if ($("envSeismicBadge")) {
+        $("envSeismicBadge").textContent = env.seismic_status || (motion > 0.4 ? "SEISMIC TREMOR" : "QUIET / STABLE");
+        $("envSeismicBadge").className = `badge bg-dark border ${motion > 0.4 ? "text-danger border-danger" : motion > 0.15 ? "text-warning border-warning" : "text-info border-info"}`;
+    }
+
+    // Risk Bars Breakdown
+    const rustPct = env.rust_corrosion_risk !== undefined ? env.rust_corrosion_risk : (clamp((rh - 40)/50, 0, 1)*70 + clamp((amb-10)/35, 0, 1)*30);
+    const seismicPct = env.seismic_shake_risk !== undefined ? env.seismic_shake_risk : clamp((motion/0.50)*100, 0, 100);
+    const thermalPct = env.thermal_ambient_risk !== undefined ? env.thermal_ambient_risk : clamp((amb - 25)/25 * 100, 0, 100);
+
+    if ($("rustRiskPercent")) $("rustRiskPercent").textContent = `${fmt(rustPct, 1)}%`;
+    if ($("rustRiskBar")) $("rustRiskBar").style.width = `${clamp(rustPct, 0, 100)}%`;
+    if ($("rustKineticsNote")) $("rustKineticsNote").textContent = env.corrosion_rate_category || "Atmospheric condensation & iron oxidation kinetics";
+
+    if ($("seismicRiskPercent")) $("seismicRiskPercent").textContent = `${fmt(seismicPct, 1)}%`;
+    if ($("seismicRiskBar")) $("seismicRiskBar").style.width = `${clamp(seismicPct, 0, 100)}%`;
+    if ($("seismicKineticsNote")) $("seismicKineticsNote").textContent = env.seismic_status || "Foundation displacement & mechanical tremor resonance";
+
+    if ($("thermalRiskPercent")) $("thermalRiskPercent").textContent = `${fmt(thermalPct, 1)}%`;
+    if ($("thermalRiskBar")) $("thermalRiskBar").style.width = `${clamp(thermalPct, 0, 100)}%`;
+
+    // Actionable advisory description
+    if ($("envActionTitle")) $("envActionTitle").textContent = env.severity || "Preventative Baseline";
+    if ($("riskDescription")) {
+        $("riskDescription").textContent = `${env.description || ""} ${env.mitigation_action ? "• " + env.mitigation_action : ""}`;
+    }
 }
 
 let currentAlertFilter = "ALL";

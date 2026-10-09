@@ -21,6 +21,7 @@ class TelemetryFrame:
     ambient_temp: float      # Celsius
     rel_humidity: float      # %
     wind_speed: float        # km/h
+    motion_shake: float = 0.05 # g-force / shake amplitude (SW-420 / Accelerometer)
     device_id: str = "STM32-TX01"
     edge_thi: Optional[float] = None
     relay_status: Optional[str] = "CLOSED"
@@ -90,6 +91,7 @@ class LoRaSerialReceiver:
                 ambient_temp=float(payload.get("ambientTemp", payload.get("ambient_temp", 25.0))),
                 rel_humidity=float(payload.get("relativeHumidity", payload.get("rel_humidity", 50.0))),
                 wind_speed=float(payload.get("windSpeed", payload.get("wind_speed", 10.0))),
+                motion_shake=float(payload.get("motion_shake", payload.get("motion", payload.get("vibration", 0.05)))),
                 device_id=str(payload.get("deviceId", payload.get("device_id", "STM32-TX01"))),
                 edge_thi=float(payload.get("edgeTHI", payload.get("thi", 0.0))) if ("edgeTHI" in payload or "thi" in payload) else None,
                 relay_status=raw_relay,

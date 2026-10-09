@@ -87,13 +87,35 @@ class TransformerSimulator:
             rh = 38.0
             wind = 16.0
 
+        elif mode == "EARTHQUAKE_SEISMIC_SHAKE":
+            v = 227.0 + noise(1.5)
+            i = 10.8 + noise(0.4)
+            t = 39.0 + noise(0.5)
+            vib = 0.54 + abs(noise(0.04))
+            motion = 0.52 + abs(noise(0.05)) # High tremor g-force
+            oil = "NORMAL"
+            amb_t = 29.0
+            rh = 58.0
+            wind = 14.0
+
+        elif mode == "HIGH_HUMIDITY_RUST_RISK":
+            v = 230.0 + noise(1.0)
+            i = 9.5 + noise(0.3)
+            t = 36.0 + noise(0.4)
+            vib = 0.06 + abs(noise(0.01))
+            motion = 0.05 + abs(noise(0.01))
+            oil = "NORMAL"
+            amb_t = 33.5 + noise(0.3) # Hot ambient
+            rh = 88.0 + abs(noise(1.5)) # High humidity causing condensation
+            wind = 6.0
+
         elif mode == "WILDFIRE_ENVIRONMENTAL_HAZARD":
             v = 232.0 + noise(1.0)
             i = 12.5 + noise(0.3)
             t = 74.0 + noise(0.7)
             vib = 0.10 + abs(noise(0.01))
+            motion = 0.08 + abs(noise(0.01))
             oil = "LOW"
-            # Severe dry, windy, high heat weather
             amb_t = 43.5 + noise(0.5)
             rh = 14.0 + abs(noise(0.5))
             wind = 39.0 + abs(noise(2.0))
@@ -103,10 +125,15 @@ class TransformerSimulator:
             i = 9.8 + noise(0.3)
             t = 34.0 + noise(0.4)
             vib = 0.05 + abs(noise(0.008))
+            motion = 0.05 + abs(noise(0.008))
             oil = "NORMAL"
             amb_t = 28.0 + noise(0.3)
             rh = 52.0 + noise(1.0)
             wind = 11.0 + noise(1.0)
+
+        # Fallback if motion not set in other branches
+        if 'motion' not in locals():
+            motion = vib
 
         return TelemetryFrame(
             timestamp=now,
@@ -118,5 +145,6 @@ class TransformerSimulator:
             ambient_temp=round(amb_t, 1),
             rel_humidity=round(max(5.0, min(100.0, rh)), 1),
             wind_speed=round(max(0.0, wind), 1),
+            motion_shake=round(max(0.0, motion), 3),
             device_id="STM32-TX01"
         )

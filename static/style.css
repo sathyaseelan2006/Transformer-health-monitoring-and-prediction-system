@@ -1877,4 +1877,222 @@ model-viewer {
     }
 }
 
+/* ==========================================================================
+   MODULE 03: MULTI-SENSOR ENVIRONMENTAL RISK FUSION
+   ========================================================================== */
+.env-fusion-card {
+    border: 1px solid rgba(245, 158, 11, 0.35) !important;
+    background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.08), transparent 70%),
+                rgba(15, 23, 42, 0.85) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 25px rgba(245, 158, 11, 0.12) !important;
+}
+
+.env-hero-container {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 16px;
+    align-items: center;
+    margin-top: 14px;
+    padding: 12px;
+    background: rgba(2, 6, 23, 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.env-score-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.env-dial-wrap {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.env-dial-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.env-dial-track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 12;
+}
+
+.env-dial-fill {
+    fill: none;
+    stroke: var(--cyan);
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-dasharray: 402.12;
+    stroke-dashoffset: 402.12;
+    transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease;
+}
+
+.env-dial-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.env-score-num {
+    font-size: 1.8rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    color: #fff;
+    line-height: 1;
+}
+
+.env-score-unit {
+    font-size: 0.62rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--soft);
+    margin-top: 2px;
+}
+
+.env-dial-meta {
+    margin-top: 8px;
+}
+
+.env-dial-meta span {
+    font-size: 0.78rem;
+    display: block;
+}
+
+.env-sensor-trio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.env-sensor-box {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.25s ease;
+}
+
+.env-sensor-box:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0, 240, 255, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.15);
+}
+
+.temp-box {
+    border-left: 3px solid #f97316;
+}
+
+.humidity-box {
+    border-left: 3px solid #38bdf8;
+}
+
+.motion-box {
+    border-left: 3px solid #ec4899;
+}
+
+.sensor-icon-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.sensor-icon {
+    font-size: 1.2rem;
+}
+
+.sensor-name {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.1;
+}
+
+.sensor-val {
+    display: block;
+    font-size: 1.35rem;
+    font-family: var(--mono);
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.sensor-sub-metric {
+    font-size: 0.65rem;
+    color: var(--soft);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.env-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.risk-bar-card {
+    padding: 10px 12px;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.risk-track-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.risk-fill-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bar-rust {
+    background: linear-gradient(90deg, #d97706, #ef4444);
+    box-shadow: 0 0 10px rgba(217, 119, 6, 0.5);
+}
+
+.bar-seismic {
+    background: linear-gradient(90deg, #ec4899, #ef4444);
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+}
+
+.bar-thermal {
+    background: linear-gradient(90deg, #06b6d4, #f59e0b);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+.env-advisory-box {
+    padding: 10px 14px;
+    background: rgba(245, 158, 11, 0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+@media (max-width: 900px) {
+    .env-hero-container {
+        grid-template-columns: 1fr;
+    }
+    .env-sensor-trio,
+    .env-breakdown-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 

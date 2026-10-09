@@ -18,10 +18,25 @@ class StressIndicators:
 
 @dataclass
 class EnvironmentalRisk:
-    fire_weather_index: float # 0 - 100
-    risk_level: str          # "LOW", "MODERATE", "HIGH", "EXTREME"
-    consequence_severity: str# "CONTAINED", "ELEVATED HAZARD", "WILDFIRE DISASTER RISK"
+    fused_risk_score: float      # 0 - 100 (%) Multi-sensor fused environmental risk
+    risk_level: str              # "LOW", "MODERATE", "HIGH", "EXTREME"
+    consequence_severity: str    # "CONTAINED", "ELEVATED HAZARD", "SEVERE DAMAGE HAZARD"
     description: str
+    
+    # Physical sensor derived sub-risks
+    rust_corrosion_risk: float   # 0 - 100 (%) Rust possibility from Temp + Humidity
+    seismic_shake_risk: float    # 0 - 100 (%) Earthquake / shake structural damage from motion sensor
+    thermal_ambient_risk: float  # 0 - 100 (%) Ambient thermal stress
+    
+    # Environmental indicators
+    dew_point_temp: float        # °C
+    condensation_status: str     # "DRY / SAFE", "ELEVATED DEW RISK", "ACTIVE CONDENSATION"
+    seismic_status: str          # "QUIET / STABLE", "MILD SHAKE", "EARTHQUAKE DETECTED", "CRITICAL SEISMIC"
+    corrosion_rate_category: str # "MINIMAL (<0.01 mm/yr)", "MODERATE (C2-C3)", "AGGRESSIVE (C4-C5)"
+    mitigation_action: str       # Actionable maintenance advice
+    
+    # Backward compatibility
+    fire_weather_index: float = 0.0
 
 @dataclass
 class EdgeProtectionStatus:
@@ -134,46 +149,103 @@ class TransformerAnalytics:
         transformer_temp: float,
         ambient_temp: float,
         rel_humidity: float,
-        wind_speed: float,
-        oil_level: str
+        motion_shake: float = 0.05,
+        wind_speed: float = 10.0,
+        oil_level: str = "NORMAL"
     ) -> EnvironmentalRisk:
         """
-        Couples equipment telemetry with ambient fire-receptivity variables (Section VIII).
-        Differentiates equipment failure likelihood from consequence severity.
+        Multi-Sensor Environmental Risk Fusion (Prototype Sensors: Temp, Humidity, Motion).
+        Calculates:
+          1. Rust & Corrosion Possibility Index (Temp + Humidity + Dew Point Condensation)
+          2. Seismic & Shake Structural Damage Risk (Motion / Tremor Sensor)
+          3. Thermal Ambient Degradation Stress
+          4. Fused Composite Environmental Risk (0-100%)
         """
-        # Environmental dryness and fire vulnerability index (0 to 100)
-        temp_factor = max(0.0, min(1.0, (ambient_temp - 20.0) / 30.0))
-        dryness_factor = max(0.0, min(1.0, (80.0 - rel_humidity) / 70.0))
-        wind_factor = max(0.0, min(1.0, wind_speed / 45.0))
-        
-        env_index = (0.4 * temp_factor + 0.4 * dryness_factor + 0.2 * wind_factor) * 100.0
+        # A. Dew Point & Condensation Calculation (Magnus-Tetens formula)
+        dew_point = round(ambient_temp - ((100.0 - rel_humidity) / 5.0), 1)
+        dew_margin = ambient_temp - dew_point
 
-        # Equipment vulnerability amplification
-        equipment_hot = transformer_temp > self.config.T_TRIP_LIMIT * 0.85
-        low_oil = oil_level in ["LOW", "CRITICAL"]
+        if dew_margin <= 2.0 or rel_humidity >= 85.0:
+            condensation_status = "ACTIVE CONDENSATION (HIGH RUST HAZARD)"
+            cond_factor = 1.45
+        elif dew_margin <= 4.0 or rel_humidity >= 70.0:
+            condensation_status = "ELEVATED DEW RISK (SURFACE MOISTURE)"
+            cond_factor = 1.25
+        else:
+            condensation_status = "DRY / SAFE (NO CONDENSATION)"
+            cond_factor = 1.0
 
-        if env_index > 75.0 or (env_index > 55.0 and (equipment_hot or low_oil)):
+        # B. Rust & Atmospheric Corrosion Risk Calculation (ISO 9223 Kinetics)
+        # Steel tank & cooling fin oxidation accelerates with RH > 50% and elevated temperature
+        rh_factor = max(0.0, min(1.0, (rel_humidity - 40.0) / 50.0))
+        temp_corrosion_factor = max(0.1, min(1.0, (ambient_temp - 10.0) / 35.0))
+        raw_rust = (0.65 * rh_factor + 0.35 * temp_corrosion_factor) * 100.0 * cond_factor
+        rust_risk = round(min(100.0, max(0.0, raw_rust)), 1)
+
+        if rust_risk > 75.0:
+            corrosion_cat = "AGGRESSIVE (ISO C4/C5 - Rapid Rusting)"
+        elif rust_risk > 45.0:
+            corrosion_cat = "MODERATE (ISO C3 - Gradual Oxidation)"
+        else:
+            corrosion_cat = "MINIMAL (ISO C1/C2 - Passivated Dry)"
+
+        # C. Seismic / Earth Tremor & Motion Shake Risk Calculation
+        # Motion sensor detection of ground shaking / earthquakes / structural tilt
+        raw_shake = (motion_shake / 0.50) * 100.0
+        seismic_risk = round(min(100.0, max(0.0, raw_shake)), 1)
+
+        if motion_shake >= 0.45:
+            seismic_status = "CRITICAL SEISMIC SHOCK / TREMOR (M >= 5.0)"
+        elif motion_shake >= 0.20:
+            seismic_status = "EARTHQUAKE TREMOR DETECTED (M 3.0 - 4.5)"
+        elif motion_shake >= 0.08:
+            seismic_status = "MILD MECHANICAL SHAKE / TILT"
+        else:
+            seismic_status = "QUIET / STABLE FOUNDATION"
+
+        # D. Thermal Ambient Stress
+        raw_thermal = ((ambient_temp - 25.0) / 25.0) * 100.0
+        thermal_risk = round(min(100.0, max(0.0, raw_thermal)), 1)
+
+        # E. Fused Composite Environmental Risk Score (0.45 Rust + 0.40 Shake + 0.15 Thermal)
+        fused_score = round(0.45 * rust_risk + 0.40 * seismic_risk + 0.15 * thermal_risk, 1)
+
+        # Classification & Actionable Mitigation Advice
+        if fused_score >= 75.0 or seismic_risk >= 80.0 or rust_risk >= 85.0:
             risk_level = "EXTREME"
-            severity = "WILDFIRE DISASTER RISK"
-            desc = "Dry vegetation, high heat, wind, and hot equipment elevate arcing/fault ignition hazard."
-        elif env_index > 50.0:
+            severity = "SEVERE DAMAGE HAZARD"
+            desc = f"Severe multi-factor risk: {seismic_status.lower()} and {corrosion_cat.lower()}."
+            action = "Dispatch immediate emergency inspection: check anchor bolts, radiator fin oxidation, and foundation dampeners."
+        elif fused_score >= 50.0:
             risk_level = "HIGH"
             severity = "ELEVATED HAZARD"
-            desc = "Sub-optimal ambient conditions; equipment faults may escape local containment."
-        elif env_index > 30.0:
+            desc = f"High environmental stress: {seismic_status.lower()}, rust potential {rust_risk}%."
+            action = "Schedule preventative tank recoating, verify anti-vibration mountings, and inspect enclosure seals."
+        elif fused_score >= 25.0:
             risk_level = "MODERATE"
-            severity = "MODERATE RISK"
-            desc = "Normal ambient range with mild fire receptivity."
+            severity = "MODERATE EXPOSURE"
+            desc = f"Moderate ambient exposure: {corrosion_cat.lower()}, stable foundation."
+            action = "Routine environmental monitoring; ensure proper enclosure drainage and ventilation."
         else:
             risk_level = "LOW"
-            severity = "CONTAINED"
-            desc = "Cool and humid surroundings; faults confined to equipment casing."
+            severity = "OPTIMAL / SAFE"
+            desc = "Dry surroundings, minimal rust kinetics, stable foundation with no seismic motion."
+            action = "All environmental parameters optimal. Continue automated monitoring."
 
         return EnvironmentalRisk(
-            fire_weather_index=round(env_index, 1),
+            fused_risk_score=fused_score,
             risk_level=risk_level,
             consequence_severity=severity,
-            description=desc
+            description=desc,
+            rust_corrosion_risk=rust_risk,
+            seismic_shake_risk=seismic_risk,
+            thermal_ambient_risk=thermal_risk,
+            dew_point_temp=dew_point,
+            condensation_status=condensation_status,
+            seismic_status=seismic_status,
+            corrosion_rate_category=corrosion_cat,
+            mitigation_action=action,
+            fire_weather_index=fused_score
         )
 
     def evaluate_deterministic_protection(
@@ -375,27 +447,27 @@ class TransformerAnalytics:
                 "is_tripped": False
             })
 
-        # 6. Environmental FWI Alerts
+        # 6. Environmental Multi-Sensor Risk Alerts (Temp, Humidity, Motion)
         if fwi >= 75.0:
             alerts.append({
                 "severity": "CRITICAL",
                 "category": "ENVIRONMENTAL",
                 "code": "ENV-CRIT-01",
-                "title": "Extreme Wildfire Exposure Condition",
-                "message": f"Fire Weather Index at {fwi:.1f}. High wind/dry ambient amplifies flashover consequence.",
-                "value": f"{fwi:.1f} FWI",
-                "threshold": "75.0 FWI",
+                "title": "Severe Environmental Threat (Earthquake / Aggressive Rust)",
+                "message": f"Composite Environmental Risk at {fwi:.1f}%. High risk of structural shake damage or rapid tank corrosion.",
+                "value": f"{fwi:.1f}% ERF",
+                "threshold": "75.0% ERF",
                 "is_tripped": False
             })
-        elif fwi >= 55.0:
+        elif fwi >= 50.0:
             alerts.append({
                 "severity": "WARNING",
                 "category": "ENVIRONMENTAL",
                 "code": "ENV-WARN-02",
-                "title": "Elevated Climate Risk Hazard",
-                "message": f"Fire Weather Index {fwi:.1f}. Hot and dry conditions warrant closer site inspection.",
-                "value": f"{fwi:.1f} FWI",
-                "threshold": "55.0 FWI",
+                "title": "Elevated Environmental Corrosion / Tremor Hazard",
+                "message": f"Environmental Risk Index {fwi:.1f}%. High humidity condensation or mechanical ground tremor detected.",
+                "value": f"{fwi:.1f}% ERF",
+                "threshold": "50.0% ERF",
                 "is_tripped": False
             })
 
