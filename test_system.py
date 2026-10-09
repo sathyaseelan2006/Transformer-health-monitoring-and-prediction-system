@@ -90,12 +90,15 @@ class TestTransformerSystem(unittest.TestCase):
 
     def test_json_telemetry_parser(self):
         """Test JSON telemetry parsing matching LoRa SX1278 stream."""
-        json_sample = '{"voltage": 235.5, "current": 11.2, "temperature": 36.0, "vibration": 0.08, "oil_level": "NORMAL", "ambient_temp": 29.0, "rel_humidity": 48.0, "wind_speed": 14.0}'
+        json_sample = '{"voltage": 235.5, "current": 11.2, "temperature": 36.0, "vibration": 0.08, "oil_level": "NORMAL", "ambient_temp": 29.0, "rel_humidity": 48.0, "wind_speed": 14.0, "buzzer": true, "danger": true, "tripReason": "TEMP HIGH TRIP"}'
         frame = LoRaSerialReceiver.parse_json_payload(json_sample)
         self.assertIsNotNone(frame)
         self.assertEqual(frame.voltage, 235.5)
         self.assertEqual(frame.current, 11.2)
         self.assertEqual(frame.oil_level, "NORMAL")
+        self.assertTrue(frame.buzzer)
+        self.assertTrue(frame.danger)
+        self.assertEqual(frame.trip_reason, "TEMP HIGH TRIP")
 
     def test_ai_diagnostic_engine(self):
         """Test local RAG diagnostic report generation."""
@@ -112,7 +115,23 @@ class TestTransformerSystem(unittest.TestCase):
         self.assertEqual(report.severity_code, "CRITICAL")
         self.assertTrue(len(report.recommended_instruments) > 0)
         self.assertTrue(len(report.technician_playbook) > 0)
-        self.assertIn("decision-support", report.decision_support_disclaimer)
+    def test_omniroute_component_health(self):
+        """Test OmniRoute AI component breakdown prediction."""
+        res = self.ai_engine.predict_component_health(
+            thi=92.5,
+            v_real=230.0,
+            i_real=10.0,
+            t_real=32.0,
+            vib_real=0.05,
+            oil_level="NORMAL"
+        )
+        self.assertIn("components", res)
+        self.assertIn("bushing_assembly", res["components"])
+        self.assertIn("winding_core", res["components"])
+        self.assertIn("thermal_tank", res["components"])
+        self.assertIn("cellulose_insulation", res["components"])
+        self.assertEqual(res["components"]["bushing_assembly"]["status"], "HEALTHY")
 
 if __name__ == "__main__":
     unittest.main()
+

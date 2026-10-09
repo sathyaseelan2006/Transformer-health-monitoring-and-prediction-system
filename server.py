@@ -29,6 +29,8 @@ history = []
 thi_history = []
 active_mode = "SIMULATION"
 active_custom_override: Optional[Dict[str, Any]] = None
+esp32_latest_frame: Optional[TelemetryFrame] = None
+esp32_last_heartbeat: Optional[datetime] = None
 
 # Initialize some historical wear data
 base_t = datetime.now() - timedelta(days=20)
@@ -44,15 +46,83 @@ class ScenarioRequest(BaseModel):
 class DiagnoseRequest(BaseModel):
     override: Optional[bool] = False
 
+class Esp32TelemetryPayload(BaseModel):
+    device_id: Optional[str] = "ESP32-TX01"
+    voltage: float
+    current: float
+    temperature: float
+    vibration: float
+    oil_level: Optional[str] = "NORMAL"
+    ambient_temp: Optional[float] = 28.5
+    rel_humidity: Optional[float] = 46.0
+    wind_speed: Optional[float] = 11.2
+    health_index: Optional[float] = None
+
+@app.post("/api/telemetry")
+def receive_esp32_telemetry(payload: Esp32TelemetryPayload):
+    global esp32_latest_frame, esp32_last_heartbeat, active_mode
+    esp32_last_heartbeat = datetime.now()
+    active_mode = "ESP32_WIFI"
+    
+    esp32_latest_frame = TelemetryFrame(
+        timestamp=esp32_last_heartbeat,
+        voltage=payload.voltage,
+        current=payload.current,
+        temperature=payload.temperature,
+        vibration=payload.vibration,
+        oil_level=payload.oil_level.upper() if payload.oil_level else "NORMAL",
+        ambient_temp=payload.ambient_temp or 28.5,
+        rel_humidity=payload.rel_humidity or 46.0,
+        wind_speed=payload.wind_speed or 11.2,
+        device_id=payload.device_id or "ESP32-TX01",
+        edge_thi=payload.health_index
+    )
+    return {"status": "ok", "mode": "ESP32_WIFI", "received_at": esp32_last_heartbeat.strftime("%H:%M:%S")}
+
+@app.get("/api/component-health")
+def get_component_health():
+    # Fetch current frame for component health analysis
+    if active_mode == "ESP32_WIFI" and esp32_latest_frame:
+        frame = esp32_latest_frame
+    elif active_mode == "SERIAL" and receiver.is_connected():
+        frame = receiver.read_frame() or simulator.generate_frame("NORMAL")
+    else:
+        frame = simulator.generate_frame()
+
+    stress = analytics.compute_stress_and_thi(
+        v_real=frame.voltage,
+        i_real=frame.current,
+        t_real=frame.temperature,
+        vib_real=frame.vibration
+    )
+
+    component_predictions = ai_engine.predict_component_health(
+        thi=stress.thi,
+        v_real=frame.voltage,
+        i_real=frame.current,
+        t_real=frame.temperature,
+        vib_real=frame.vibration,
+        oil_level=frame.oil_level
+    )
+    return component_predictions
+
 @app.get("/api/telemetry")
 def get_telemetry():
-    global active_custom_override
+    global active_custom_override, active_mode
     # 1. Acquire telemetry frame
-    if active_mode == "SERIAL" and receiver.is_connected():
+    if active_mode == "ESP32_WIFI" and esp32_latest_frame:
+        # Check if ESP32 frame is recent (within 10 seconds)
+        if esp32_last_heartbeat and (datetime.now() - esp32_last_heartbeat).total_seconds() < 10.0:
+            frame = esp32_latest_frame
+        else:
+            # Fallback if ESP32 timed out
+            frame = simulator.generate_frame()
+    elif active_mode == "SERIAL" and receiver.is_connected():
         frame = receiver.read_frame()
         if not frame:
             frame = simulator.generate_frame("NORMAL")
     elif active_custom_override:
+
         c = active_custom_override
         frame = TelemetryFrame(
             timestamp=datetime.now(),
@@ -137,6 +207,18 @@ def get_telemetry():
             "led": prot.led_alert,
             "relay_state": prot.relay_state
         },
+        "lora": {
+            "frequency": "433.175 MHz",
+            "spreading_factor": "SF7 / BW 125 kHz",
+            "coding_rate": "4/5 CR",
+            "rssi": -76.8 if active_mode == "ESP32_WIFI" else (-82.4 if active_mode == "SERIAL" else -78.0),
+            "snr": 9.8 if active_mode == "ESP32_WIFI" else (8.4 if active_mode == "SERIAL" else 9.2),
+            "packet_loss": 0.0,
+            "gateway_status": "ONLINE (P2P Link Active)",
+            "packet_count": len(history),
+            "edge_sampling": "100 Hz / 12-bit ADC",
+            "payload_size": "32 bytes (packed IEEE-754)"
+        },
         "prediction": service_pred,
         "history": history,
         "mode": active_mode,
@@ -156,8 +238,28 @@ def set_scenario(req: ScenarioRequest):
 
 @app.post("/api/diagnose")
 def trigger_diagnostics(req: DiagnoseRequest):
-    # Fetch current frame and compute diagnosis
-    frame = simulator.generate_frame()
+    # Fetch current active frame for accurate diagnosis
+    if active_mode == "ESP32_WIFI" and esp32_latest_frame:
+        frame = esp32_latest_frame
+    elif active_mode == "SERIAL" and receiver.is_connected():
+        frame = receiver.read_frame() or simulator.generate_frame("NORMAL")
+    elif active_custom_override:
+        c = active_custom_override
+        frame = TelemetryFrame(
+            timestamp=datetime.now(),
+            voltage=float(c.get("voltage", 230.0)),
+            current=float(c.get("current", 10.0)),
+            temperature=float(c.get("temperature", 34.0)),
+            vibration=float(c.get("vibration", 0.05)),
+            oil_level=str(c.get("oil_level", "NORMAL")).upper(),
+            ambient_temp=float(c.get("ambient_temp", 28.0)),
+            rel_humidity=float(c.get("rel_humidity", 45.0)),
+            wind_speed=float(c.get("wind_speed", 12.0)),
+            device_id="STM32-TX01"
+        )
+    else:
+        frame = simulator.generate_frame()
+
     stress = analytics.compute_stress_and_thi(frame.voltage, frame.current, frame.temperature, frame.vibration)
     env_risk = analytics.evaluate_environmental_risk_fusion(
         frame.temperature, frame.ambient_temp, frame.rel_humidity, frame.wind_speed, frame.oil_level
@@ -194,6 +296,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")
 def serve_index():
     return FileResponse("static/index.html")
+
+@app.get("/analytics")
+def serve_analytics():
+    return FileResponse("static/analytics.html")
+
+# The dashboard uses root-relative asset URLs while the API remains under /api.
+app.mount("/", StaticFiles(directory="static"), name="root-static")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)

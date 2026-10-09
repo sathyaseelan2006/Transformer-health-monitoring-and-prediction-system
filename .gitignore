@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 *.log
 .vscode/*.user
+.venv/
+.pio/
+backend/target/
+scratch/

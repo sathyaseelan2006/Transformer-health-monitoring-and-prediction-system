@@ -24,6 +24,9 @@ class TelemetryFrame:
     device_id: str = "STM32-TX01"
     edge_thi: Optional[float] = None
     relay_status: Optional[str] = "CLOSED"
+    buzzer: Optional[bool] = False
+    danger: Optional[bool] = False
+    trip_reason: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -72,19 +75,27 @@ class LoRaSerialReceiver:
         """Parses a compact JSON string into a TelemetryFrame."""
         try:
             payload = json.loads(json_str)
+            raw_relay = str(payload.get("relayStatus", payload.get("relay_status", "CLOSED"))).upper()
+            raw_buzzer = bool(payload.get("buzzer", False))
+            raw_danger = bool(payload.get("danger", False))
+            raw_trip_reason = payload.get("tripReason") or payload.get("trip_reason")
+
             return TelemetryFrame(
                 timestamp=datetime.now(),
                 voltage=float(payload.get("voltage", 230.0)),
                 current=float(payload.get("current", 10.0)),
                 temperature=float(payload.get("temperature", 30.0)),
                 vibration=float(payload.get("vibration", 0.05)),
-                oil_level=str(payload.get("oil_level", "NORMAL")).upper(),
-                ambient_temp=float(payload.get("ambient_temp", 25.0)),
-                rel_humidity=float(payload.get("rel_humidity", 50.0)),
-                wind_speed=float(payload.get("wind_speed", 10.0)),
-                device_id=str(payload.get("device_id", "STM32-TX01")),
-                edge_thi=float(payload["thi"]) if "thi" in payload else None,
-                relay_status=str(payload.get("relay_status", "CLOSED")).upper()
+                oil_level=str(payload.get("oilLevel", payload.get("oil_level", "NORMAL"))).upper(),
+                ambient_temp=float(payload.get("ambientTemp", payload.get("ambient_temp", 25.0))),
+                rel_humidity=float(payload.get("relativeHumidity", payload.get("rel_humidity", 50.0))),
+                wind_speed=float(payload.get("windSpeed", payload.get("wind_speed", 10.0))),
+                device_id=str(payload.get("deviceId", payload.get("device_id", "STM32-TX01"))),
+                edge_thi=float(payload.get("edgeTHI", payload.get("thi", 0.0))) if ("edgeTHI" in payload or "thi" in payload) else None,
+                relay_status=raw_relay,
+                buzzer=raw_buzzer,
+                danger=raw_danger,
+                trip_reason=raw_trip_reason
             )
         except Exception as e:
             logger.error(f"Failed to parse JSON telemetry: {e}")

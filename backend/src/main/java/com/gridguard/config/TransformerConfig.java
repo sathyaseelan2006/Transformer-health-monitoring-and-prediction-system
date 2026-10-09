@@ -16,7 +16,7 @@ public class TransformerConfig {
     private TransformerProperties transformer;
     private ThresholdProperties thresholds;
     private WeightProperties weights;
-    private ESP32Properties esp32;
+    private STM32Properties stm32;
 
     @Data
     public static class TransformerProperties {
@@ -47,7 +47,7 @@ public class TransformerConfig {
     }
 
     @Data
-    public static class ESP32Properties {
+    public static class STM32Properties {
         private String serialPort; // COM3
         private Integer baudRate; // 115200
         private Integer timeoutMs; // 1000

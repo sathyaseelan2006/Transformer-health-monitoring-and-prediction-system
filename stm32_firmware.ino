@@ -3,7 +3,12 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-/* ------------ LCD ------------ */
+/* STM32F103C8T6 Blue Pill transformer monitor.
+ * USB CDC serial output is newline-delimited JSON for the backend & web dashboard.
+ * Real-time threshold validation, audio buzzer alarm, deterministic relay trip,
+ * and status LED management.
+ */
+
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 /* ------------ PIN DEFINITIONS ------------ */
@@ -20,19 +25,19 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 #define YELLOW_LED PB13
 #define RED_LED PB14
 
-/* ------------ CALIBRATED THRESHOLD LIMITS ------------ */
-#define VOLTAGE_MIN_LIMIT 185.0f
-#define VOLTAGE_MAX_LIMIT 265.0f
-#define CURRENT_LIMIT 4.0f
-#define TEMP_LIMIT 40.0f
-#define VIBRATION_LIMIT 0.50f
-#define HEALTH_CRITICAL_LIMIT 40.0f
+/* ------------ CALIBRATED SENSOR THRESHOLD LIMITS ------------ */
+#define VOLTAGE_MIN_LIMIT 185.0f   // Minimum safe voltage (V)
+#define VOLTAGE_MAX_LIMIT 265.0f   // Maximum safe voltage (V)
+#define CURRENT_LIMIT 4.0f         // Overload current trip limit (A)
+#define TEMP_LIMIT 40.0f           // High temperature trip limit (°C)
+#define VIBRATION_LIMIT 0.50f      // Vibration anomaly threshold (g)
+#define HEALTH_CRITICAL_LIMIT 40.0f // Critical THI cutoff (0-100)
 #define CURRENT_SAMPLES 1000
 
 OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
+DallasTemperature temperatureSensor(&oneWire);
 
-/* ------------ GLOBAL VARIABLES ------------ */
+/* ------------ GLOBAL SENSOR VARIABLES ------------ */
 float voltage = 0.0f;
 float current = 0.0f;
 float temperature = 0.0f;
@@ -41,17 +46,17 @@ float healthIndex = 100.0f;
 float remainingLife = 20.0f;
 float faultPenalty = 0.0f;
 
-int oilState = HIGH;
+int oilState = HIGH;          // HIGH = Normal, LOW = Low Oil Alert
 int vibrationAdc = 0;
-int overloadState = HIGH;
+int overloadState = HIGH;     // HIGH = Normal, LOW = Overload Trip Pressed
 int lastOverloadState = HIGH;
 
+/* ------------ ALARM & PROTECTION FLAGS ------------ */
 bool buzzerActive = false;
 bool dangerActive = false;
 bool isRelayTripped = false;
 String activeTripReason = "Deterministic edge logic normal";
 
-/* ------------ SETUP ------------ */
 void setup() {
   Serial.begin(9600);
   analogReadResolution(12);
@@ -65,11 +70,13 @@ void setup() {
   pinMode(RESET_BUTTON, INPUT_PULLUP);
   pinMode(OVERLOAD_SWITCH, INPUT_PULLUP);
 
-  digitalWrite(RELAY, HIGH);
-  digitalWrite(BUZZER, LOW);
+  digitalWrite(RELAY, HIGH); // Closed / Energized
+  digitalWrite(BUZZER, LOW); // Buzzer OFF initially
   digitalWrite(GREEN_LED, HIGH);
+  digitalWrite(YELLOW_LED, LOW);
+  digitalWrite(RED_LED, LOW);
 
-  sensors.begin();
+  temperatureSensor.begin();
 
   lcd.init();
   lcd.backlight();
@@ -81,7 +88,6 @@ void setup() {
   lcd.clear();
 }
 
-/* ------------ MAIN LOOP ------------ */
 void loop() {
   readSensors();
   calculateHealth();
@@ -94,24 +100,29 @@ void loop() {
 }
 
 void readSensors() {
-  sensors.requestTemperatures();
-  float measuredTemp = sensors.getTempCByIndex(0);
-  if (measuredTemp != DEVICE_DISCONNECTED_C && measuredTemp > -50.0f && measuredTemp < 150.0f) {
-    temperature = measuredTemp;
+  // 1. DS18B20 Temperature Sensor
+  temperatureSensor.requestTemperatures();
+  float measuredTemperature = temperatureSensor.getTempCByIndex(0);
+  if (measuredTemperature != DEVICE_DISCONNECTED_C && measuredTemperature > -50.0f && measuredTemperature < 150.0f) {
+    temperature = measuredTemperature;
   }
 
-  int v_adc = analogRead(VOLTAGE_PIN);
-  voltage = (v_adc * 3.3f / 4095.0f) * 100.0f;
+  // 2. AC/DC Voltage Sensor
+  int voltageAdc = analogRead(VOLTAGE_PIN);
+  voltage = (voltageAdc * 3.3f / 4095.0f) * 100.0f;
 
+  // 3. Current Sensor (1000-sample averaging for clean RMS)
   long currentSum = 0;
-  for (int i = 0; i < CURRENT_SAMPLES; i++) {
+  for (int sample = 0; sample < CURRENT_SAMPLES; sample++) {
     currentSum += analogRead(CURRENT_PIN);
   }
-  current = ((currentSum / (float)CURRENT_SAMPLES) * 3.3f / 4095.0f) * 30.0f;
+  current = ((currentSum / (float) CURRENT_SAMPLES) * 3.3f / 4095.0f) * 30.0f;
 
+  // 4. Vibration Piezo Sensor
   vibrationAdc = analogRead(VIBRATION_PIN);
   vibration = (vibrationAdc / 4095.0f) * 1.5f;
 
+  // 5. Digital Oil Level & Overload Switch
   oilState = digitalRead(OIL_PIN);
   overloadState = digitalRead(OVERLOAD_SWITCH);
 }
@@ -127,30 +138,40 @@ void calculateHealth() {
   remainingLife = (healthIndex / 100.0f) * 20.0f;
 }
 
+/* ------------ THRESHOLD VALIDATION & BUZZER TRIGGER ------------ */
 void checkThresholdsAndFaults() {
   bool faultDetected = false;
   String reason = "";
 
+  // 1. Temperature Threshold Breach
   if (temperature > TEMP_LIMIT) {
     faultDetected = true;
     reason += "TEMP HIGH TRIP (" + String(temperature, 1) + "C); ";
     faultPenalty += 0.5f;
   }
+
+  // 2. Insulating Oil Level Drop / Breach
   if (oilState == LOW) {
     faultDetected = true;
     reason += "OIL LEVEL LOW; ";
     faultPenalty += 1.0f;
   }
+
+  // 3. Mechanical Vibration Anomaly
   if (vibration > VIBRATION_LIMIT || vibrationAdc > 500) {
     faultDetected = true;
     reason += "HIGH VIBRATION (" + String(vibration, 2) + "g); ";
     faultPenalty += 0.5f;
   }
+
+  // 4. Current Overload Threshold
   if (current > CURRENT_LIMIT) {
     faultDetected = true;
     reason += "CURRENT OVERLOAD (" + String(current, 1) + "A); ";
     faultPenalty += 0.8f;
   }
+
+  // 5. Voltage Envelope Breach (Under-voltage / Over-voltage)
   if (voltage > VOLTAGE_MAX_LIMIT) {
     faultDetected = true;
     reason += "OVER-VOLTAGE (" + String(voltage, 0) + "V); ";
@@ -160,14 +181,18 @@ void checkThresholdsAndFaults() {
     reason += "UNDER-VOLTAGE (" + String(voltage, 0) + "V); ";
     faultPenalty += 0.4f;
   }
+
+  // 6. Overload Switch Trip
   if (overloadState == LOW) {
     faultDetected = true;
     reason += "MANUAL OVERLOAD TRIP; ";
     faultPenalty += 1.0f;
   }
+
+  // 7. Critical Health Index Degradation
   if (healthIndex <= HEALTH_CRITICAL_LIMIT) {
     faultDetected = true;
-    reason += "CRITICAL THI; ";
+    reason += "CRITICAL THI DEGRADATION; ";
   }
 
   lastOverloadState = overloadState;
@@ -186,16 +211,19 @@ void checkThresholdsAndFaults() {
   }
 }
 
+/* ------------ HARDWARE ACTUATORS (RELAY, BUZZER, LEDS) ------------ */
 void updateIndicatorsAndRelay() {
   if (dangerActive || buzzerActive) {
+    // Danger / Buzzer Alarm Active: Ring buzzer, illuminate RED LED, trip relay
     digitalWrite(BUZZER, HIGH);
     digitalWrite(RED_LED, HIGH);
     digitalWrite(YELLOW_LED, LOW);
     digitalWrite(GREEN_LED, LOW);
-    digitalWrite(RELAY, LOW);
+    digitalWrite(RELAY, LOW); // Relay Tripped / Open
   } else {
+    // Normal / Non-critical Operation: Buzzer silenced, Relay closed
     digitalWrite(BUZZER, LOW);
-    digitalWrite(RELAY, HIGH);
+    digitalWrite(RELAY, HIGH); // Relay Closed / Energized
 
     if (healthIndex > 60.0f) {
       digitalWrite(GREEN_LED, HIGH);
@@ -213,11 +241,13 @@ void updateIndicatorsAndRelay() {
   }
 }
 
+/* ------------ LCD DISPLAY ROUTINE ------------ */
 void displayData() {
   static int screen = 0;
   lcd.clear();
 
   if (dangerActive || buzzerActive) {
+    // Urgent Alert Screen when Buzzer / Fault occurs
     lcd.setCursor(0, 0);
     lcd.print("! DANGER ALARM !");
     lcd.setCursor(0, 1);
@@ -229,6 +259,7 @@ void displayData() {
     return;
   }
 
+  // Normal rotating status screens
   if (screen == 0) {
     lcd.setCursor(0, 0);
     lcd.print("V:");
@@ -255,6 +286,7 @@ void displayData() {
   screen = (screen + 1) % 2;
 }
 
+/* ------------ SYSTEM RESET BUTTON ------------ */
 void resetSystem() {
   if (digitalRead(RESET_BUTTON) == LOW) {
     digitalWrite(RELAY, HIGH);
@@ -273,6 +305,7 @@ void resetSystem() {
   }
 }
 
+/* ------------ USB / LORA SERIAL TELEMETRY JSON ------------ */
 void sendTelemetryJson() {
   Serial.print("{\"deviceId\":\"STM32-TX01\",\"voltage\":");
   Serial.print(voltage, 2);

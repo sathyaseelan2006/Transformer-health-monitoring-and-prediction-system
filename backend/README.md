@@ -14,7 +14,7 @@ Java Spring Boot backend with MySQL + MongoDB for the GridGuard OS dashboard.
 - **MongoDB** - Time-series telemetry data
 - **Maven** - Build tool
 - **Swagger/OpenAPI 3** - API documentation
-- **jSerialComm** - ESP32 serial communication
+- **jSerialComm** - STM32 USB serial communication
 
 ---
 
@@ -105,7 +105,7 @@ The backend will start on **http://localhost:8080**
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/telemetry/ingest` | Ingest telemetry from ESP32 |
+| `POST` | `/telemetry/ingest` | Ingest telemetry from STM32 or an integration client |
 | `GET` | `/telemetry/{deviceId}/latest` | Get latest telemetry frame |
 | `GET` | `/telemetry/{deviceId}/count` | Get telemetry count |
 | `GET` | `/telemetry/health` | Health check |
@@ -148,11 +148,11 @@ OpenAPI 3 spec: **http://localhost:8080/api/v3/api-docs**
 
 ---
 
-## 🔌 ESP32 Integration
+## 🔌 STM32 USB Serial Integration
 
 ### **Telemetry JSON Format**
 
-Send POST requests to `/api/telemetry/ingest` with this JSON structure:
+The STM32 emits one newline-delimited JSON object over USB serial at `9600` baud. Spring Boot reads `COM3`, stores the frame, and serves it to the dashboard. The accepted JSON structure is:
 
 ```json
 {
@@ -308,7 +308,7 @@ gridguard:
     current-overload: 15.0
     temperature-trip: 85.0
   
-  esp32:
+  stm32:
     serial-port: COM3
     baud-rate: 115200
 ```
@@ -344,7 +344,7 @@ docker-compose down -v
 ## 🎯 Next Steps
 
 1. **Connect Frontend**: Update `static/app.js` to call these APIs
-2. **ESP32 Setup**: Configure ESP32 to POST telemetry to `/api/telemetry/ingest`
+2. **STM32 Setup**: Upload the STM32 sketch and connect its USB serial port. Configure `gridguard.stm32.serial-port` and `gridguard.stm32.baud-rate` in `application.yml`.
 3. **Authentication**: Add Spring Security + JWT (optional)
 4. **WebSocket**: Real-time telemetry streaming (optional)
 

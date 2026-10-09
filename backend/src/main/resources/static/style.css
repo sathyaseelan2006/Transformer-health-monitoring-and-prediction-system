@@ -1545,3 +1545,151 @@ model-viewer {
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.15);
 }
+
+.analytics-panel { grid-column: 1 / -1; margin-bottom: 20px; padding: 22px; }
+.analytics-intro, .analytics-card-heading p, .chart-footnote { margin: 6px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
+.analytics-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.9fr); gap: 14px; }
+.analytics-card { min-width: 0; padding: 18px; border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 8px; background: rgba(2, 6, 23, 0.42); }
+.analytics-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.analytics-card-heading h3 { margin: 0; font-size: 0.95rem; font-weight: 800; }
+.chart-unit { flex: 0 0 auto; color: var(--soft); font: 700 0.58rem var(--mono); letter-spacing: 0.06em; }
+.trend-legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 0.68rem; }
+.trend-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.trend-legend i { width: 14px; height: 3px; border-radius: 5px; }
+.legend-temperature { background: var(--red); }
+.legend-current { background: var(--cyan); }
+.analytics-chart-wrap { width: 100%; overflow: hidden; }
+.analytics-chart { display: block; width: 100%; height: 175px; overflow: visible; }
+.chart-gridline { stroke: rgba(148, 163, 184, 0.17); stroke-width: 1; }
+.chart-axis-label { fill: var(--soft); font: 10px var(--mono); }
+.chart-limit-line { stroke: rgba(239, 68, 68, 0.7); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.chart-limit-label { fill: #fca5a5; font: 9px var(--mono); }
+.chart-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.temperature-line { stroke: var(--red); }
+.current-line { stroke: var(--cyan); }
+.chart-current-values { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 0.7rem; }
+.chart-current-values strong { display: block; margin-top: 4px; color: var(--text); font: 700 0.78rem var(--mono); }
+.utilization-list, .component-chart-list { display: grid; gap: 12px; }
+.analytics-components { grid-column: 1 / -1; }
+.bar-chart-axis-row, .bar-chart-row { display: grid; grid-template-columns: minmax(145px, 0.8fr) minmax(140px, 1.8fr) 48px; gap: 14px; align-items: center; }
+.bar-chart-axis-row { margin: 2px 0 8px; }
+.bar-chart-axis { display: flex; justify-content: space-between; color: var(--muted); font: 600 0.6rem var(--mono); }
+.bar-chart-row { min-height: 44px; }
+.bar-chart-name { display: grid; gap: 4px; min-width: 0; }
+.bar-chart-name strong { color: var(--text); font-size: 0.74rem; line-height: 1.2; }
+.bar-chart-name small { color: var(--muted); font-size: 0.62rem; line-height: 1.2; }
+.bar-plot { position: relative; height: 15px; overflow: visible; border-radius: 3px; background: rgba(148, 163, 184, 0.13); }
+.bar-plot > span { position: absolute; inset: 0 auto 0 0; z-index: 1; display: block; max-width: 100%; border-radius: inherit; transition: width 300ms ease; }
+.limit-plot { background-image: linear-gradient(90deg, transparent calc(41.666% - 1px), rgba(148, 163, 184, 0.2) calc(41.666% - 1px), rgba(148, 163, 184, 0.2) calc(41.666% + 1px), transparent calc(41.666% + 1px)); }
+.limit-plot::after { position: absolute; z-index: 2; top: -5px; bottom: -5px; left: 83.333%; border-left: 1px dashed #fda4af; content: ""; }
+.health-threshold { position: absolute; z-index: 2; top: -5px; bottom: -5px; border-left: 1px dashed rgba(245, 158, 11, 0.8); }
+.threshold-warning { left: 40%; }
+.threshold-healthy { left: 70%; border-color: rgba(34, 197, 94, 0.75); }
+.bar-chart-value { color: var(--text); text-align: right; font: 700 0.7rem var(--mono); }
+.chart-footnote { margin-top: 14px; font-size: 0.66rem; }
+
+@media (max-width: 1000px) { .analytics-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+    .analytics-panel { padding: 16px; }
+    .analytics-card { padding: 14px; }
+    .bar-chart-axis-row, .bar-chart-row { grid-template-columns: minmax(112px, 0.9fr) minmax(90px, 1.3fr) 40px; gap: 8px; }
+    .bar-chart-name strong { font-size: 0.65rem; }
+    .bar-chart-name small { font-size: 0.56rem; }
+}
+
+/* ==========================================================================
+   4-MODULE ARCHITECTURE NAVIGATION & ENHANCEMENTS
+   ========================================================================== */
+.module-nav-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 18px 0 24px;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    backdrop-filter: blur(16px);
+}
+
+.mod-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.mod-pill:hover,
+.mod-pill.active {
+    background: rgba(0, 240, 255, 0.12);
+    border-color: rgba(0, 240, 255, 0.4);
+    color: #fff;
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.mod-num {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 240, 255, 0.2);
+    color: var(--cyan);
+}
+
+.edge-meta-card {
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lora-gateway-card {
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.lora-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.lora-meta-grid > div {
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lora-meta-grid span {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--muted);
+}
+
+.lora-meta-grid strong {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--text);
+    font-family: var(--mono);
+}
+
+@media (max-width: 800px) {
+    .lora-meta-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+

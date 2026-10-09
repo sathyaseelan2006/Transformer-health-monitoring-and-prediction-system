@@ -69,9 +69,9 @@ gridguard:
     thermal-stress: 0.25
     vibration-stress: 0.15
 
-  esp32:
+  stm32:
     serial-port: COM3
-    baud-rate: 115200
+    baud-rate: 9600
     timeout-ms: 1000
 
 # Actuator & Health Check

@@ -27,11 +27,48 @@ public class TelemetryController {
     private final TelemetryService telemetryService;
     private final AnalyticsService analyticsService;
 
+    @GetMapping
+    @Operation(summary = "Get latest STM32 telemetry with analytics")
+    public ResponseEntity<ApiResponse<TelemetryAnalyticsResponse>> getLatestDashboardTelemetry() {
+        TelemetryFrame latest = telemetryService.getLatestTelemetry("STM32-TX01");
+        if (latest == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("No STM32 telemetry found", "NOT_FOUND"));
+        }
+
+        StressIndicators stress = analyticsService.computeStressAndTHI(latest);
+        EnvironmentalRisk environmental = analyticsService.evaluateEnvironmentalRisk(latest);
+        EdgeProtectionStatus protection = analyticsService.evaluateProtection(latest);
+        RULPrediction rul = analyticsService.calculateRULAndNextService(latest.getDeviceId(), stress.getThi());
+        TelemetryAnalyticsResponse response = TelemetryAnalyticsResponse.builder()
+                .telemetryId(latest.getId())
+                .deviceId(latest.getDeviceId())
+                .timestamp(latest.getTimestamp())
+                .rawData(TelemetryAnalyticsResponse.RawData.builder()
+                        .voltage(latest.getVoltage())
+                        .current(latest.getCurrent())
+                        .temperature(latest.getTemperature())
+                        .vibration(latest.getVibration())
+                        .oilLevel(latest.getOilLevel())
+                        .ambientTemp(latest.getAmbientTemp())
+                        .relativeHumidity(latest.getRelativeHumidity())
+                        .windSpeed(latest.getWindSpeed())
+                        .build())
+                .stress(stress)
+                .environmental(environmental)
+                .protection(protection)
+                .rul(rul)
+                .status(protection.getIsTripped() ? "ALERT" : "OK")
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success(response, "Latest STM32 telemetry retrieved"));
+    }
+
     /**
-     * POST /api/telemetry/ingest - Ingest telemetry from ESP32
+     * POST /api/telemetry/ingest - Ingest telemetry from STM32 or another gateway
      */
     @PostMapping("/ingest")
-    @Operation(summary = "Ingest telemetry frame from ESP32", description = "Accepts JSON telemetry data and performs analytics")
+    @Operation(summary = "Ingest telemetry frame from STM32", description = "Accepts JSON telemetry data and performs analytics")
     public ResponseEntity<ApiResponse<TelemetryAnalyticsResponse>> ingestTelemetry(
             @RequestBody TelemetryFrame telemetryFrame) {
         try {

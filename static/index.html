@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260920">
+    <link rel="stylesheet" href="style.css?v=20261008-final">
     <script type="module" src="https://unpkg.com/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
 </head>
 <body>
@@ -21,12 +21,21 @@
                     <p class="subhead">Transformer health, life prediction, environmental risk fusion, and AI-guided maintenance in one operator cockpit.</p>
                 </div>
                 <div class="topbar-actions">
+                    <button class="btn btn-outline-info btn-sm font-monospace fw-bold" id="triggerAiDiagBtn" type="button">⚡ Run AI Diagnostics</button>
+                    <button class="btn btn-outline-warning btn-sm font-monospace fw-bold" id="topScenarioBtn" type="button">🔀 Cycle Scenario</button>
                     <span class="system-pill ok"><span></span> STM32 edge active</span>
                     <span class="system-pill cyan">SX1278 LoRa P2P</span>
                     <span class="system-pill" id="dataSourcePill">Static simulation</span>
                     <button class="icon-command" id="refreshButton" title="Refresh telemetry" type="button">R</button>
                 </div>
             </header>
+
+            <nav class="module-nav-bar" aria-label="Architecture Modules">
+                <a href="#module-sensing" class="mod-pill active"><span class="mod-num">01</span> Sensing & Data Acquisition</a>
+                <a href="#module-health" class="mod-pill"><span class="mod-num">02</span> Health Assessment & Life Prediction</a>
+                <a href="#module-risk" class="mod-pill"><span class="mod-num">03</span> Environmental Risk Fusion</a>
+                <a href="#module-lora-ai" class="mod-pill"><span class="mod-num">04</span> LoRa Telemetry & AI Diagnostics</a>
+            </nav>
 
             <section class="status-strip" aria-label="Live telemetry summary">
                 <article class="metric-tile primary">
@@ -51,12 +60,41 @@
                 </article>
             </section>
 
+            <!-- MODULE 02: Health Assessment & Life Prediction Overview -->
+            <article class="panel analytics-panel" id="module-health" aria-labelledby="analyticsTitle">
+                <div class="panel-head">
+                    <div>
+                        <p class="panel-kicker"><span class="badge bg-primary text-dark me-2">MODULE 02</span>Health Assessment & Life Prediction</p>
+                        <h2 id="analyticsTitle">Multi-Factor Stress Analytics & Subsystem Condition</h2>
+                        <p class="analytics-intro">Dynamic health degradation tracking based on IEEE C57.91 loading models. Status refreshes in real-time.</p>
+                    </div>
+                    <span class="asset-tag" id="analyticsUpdated">Waiting for telemetry</span>
+                </div>
+                <div class="analytics-grid">
+                    <section class="analytics-card" aria-labelledby="trendTitle">
+                        <div class="analytics-card-heading"><div><h3 id="trendTitle">Temperature & load trend</h3><p>Last 24 readings as a percentage of limit</p></div><span class="chart-unit">% OF LIMIT</span></div>
+                        <div class="trend-legend"><span><i class="legend-temperature"></i>Winding temperature · 85 °C trip</span><span><i class="legend-current"></i>Load current · 15 A limit</span></div>
+                        <div class="analytics-chart-wrap"><svg class="analytics-chart" viewBox="0 0 600 190" role="img" aria-label="Temperature and current trends as a percentage of their operating limits">
+                            <line class="chart-gridline" x1="42" y1="20" x2="590" y2="20"/><line class="chart-gridline" x1="42" y1="78" x2="590" y2="78"/><line class="chart-gridline" x1="42" y1="136" x2="590" y2="136"/>
+                            <text class="chart-axis-label" x="35" y="24" text-anchor="end">100</text><text class="chart-axis-label" x="35" y="82" text-anchor="end">50</text><text class="chart-axis-label" x="35" y="140" text-anchor="end">0</text>
+                            <line class="chart-limit-line" x1="42" y1="20" x2="590" y2="20"/><text class="chart-limit-label" x="586" y="15" text-anchor="end">LIMIT</text>
+                            <path id="temperatureTrend" class="chart-line temperature-line"/><path id="currentTrend" class="chart-line current-line"/>
+                            <text class="chart-axis-label" x="42" y="165">Oldest</text><text class="chart-axis-label" x="590" y="165" text-anchor="end">Latest</text>
+                        </svg></div>
+                        <div class="chart-current-values"><span>Temperature<strong id="analyticsTemp">--</strong></span><span>Load current<strong id="analyticsCurrent">--</strong></span></div>
+                    </section>
+                    <section class="analytics-card" aria-labelledby="utilizationTitle"><div class="analytics-card-heading"><div><h3 id="utilizationTitle">Operating limit utilization</h3><p>Current value and distance to the limit</p></div><span class="chart-unit">100% = LIMIT</span></div><div id="utilizationChart" aria-live="polite"></div><p class="chart-footnote">Voltage deviation: 230 V nominal, ±10% band. Limits: current 15 A, temperature 85 °C, vibration 0.50 g.</p></section>
+                    <section class="analytics-card analytics-components" aria-labelledby="componentChartTitle"><div class="analytics-card-heading"><div><h3 id="componentChartTitle">Subsystem health estimation</h3><p>Estimated condition score for each monitored assembly</p></div><span class="chart-unit">0–100%</span></div><div id="componentChart" aria-live="polite"></div><p class="chart-footnote">Healthy ≥ 70% · Warning 40–69% · Critical &lt; 40%. Scores are telemetry-derived estimates.</p></section>
+                </div>
+            </article>
+
             <section class="dashboard-grid">
-                <article class="panel hero-panel">
+                <!-- MODULE 01: Sensing & Data Acquisition -->
+                <article class="panel hero-panel" id="module-sensing">
                     <div class="panel-head">
                         <div>
-                            <p class="panel-kicker">Electrical Stress Fingerprint</p>
-                            <h2>Live Condition Core</h2>
+                            <p class="panel-kicker"><span class="badge bg-info text-dark me-2">MODULE 01</span>Sensing & Edge Data Acquisition</p>
+                            <h2>Edge Multi-Sensor Core & Stress State</h2>
                         </div>
                         <span class="confidence-chip" id="confidenceChip">96% signal confidence</span>
                     </div>
@@ -99,32 +137,42 @@
 
                     <div class="sensor-grid">
                         <div class="sensor-card">
-                            <span>Voltage</span>
+                            <span>Voltage (ZMPT101B)</span>
                             <strong id="voltageValue">-- V</strong>
-                            <small>Nominal 230 V</small>
+                            <small>Nominal 230 V · ±10% band</small>
                         </div>
                         <div class="sensor-card">
-                            <span>Load Current</span>
+                            <span>Current (ACS712)</span>
                             <strong id="currentValue">-- A</strong>
                             <small>Trip threshold 15 A</small>
                         </div>
                         <div class="sensor-card">
-                            <span>Winding Temp</span>
+                            <span>Winding Temp (PT100)</span>
                             <strong id="temperatureValue">-- C</strong>
                             <small>Trip threshold 85 C</small>
                         </div>
                         <div class="sensor-card">
-                            <span>Vibration</span>
+                            <span>Vibration (SW-420)</span>
                             <strong id="vibrationValue">-- g</strong>
-                            <small>Piezo channel</small>
+                            <small>Piezo channel · Limit 0.50g</small>
+                        </div>
+                    </div>
+
+                    <div class="edge-meta-card mt-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-muted font-monospace small">
+                            <span><i class="text-info">●</i> Sampling: 100 Hz ADC</span>
+                            <span><i class="text-success">●</i> Resolution: 12-bit</span>
+                            <span><i class="text-warning">●</i> Frame Window: 2.0s</span>
+                            <span><i class="text-info">●</i> Microcontroller: STM32 / ESP32</span>
                         </div>
                     </div>
                 </article>
 
+                <!-- MODULE 01: 3D Spatial Digital Twin & Waveform Spectrum -->
                 <article class="panel twin-panel" id="assets">
                     <div class="panel-head">
                         <div>
-                            <p class="panel-kicker">Spatial Telemetry Mapping & Digital Twin</p>
+                            <p class="panel-kicker"><span class="badge bg-info text-dark me-2">MODULE 01</span>Spatial Telemetry Mapping & Digital Twin</p>
                             <h2>3D Signal-to-Asset Anomaly Bridge — Transformer TX-01</h2>
                         </div>
                         <div class="twin-legend">
@@ -355,64 +403,92 @@
                         </div>
                     </div>
                 </article>
-                </article>
 
-                <article class="panel prediction-panel" id="prediction">
+                <!-- MODULE 04: LoRa Communication & AI Diagnostics Layer -->
+                <article class="panel prediction-panel" id="module-lora-ai">
                     <div class="panel-head">
                         <div>
-                            <p class="panel-kicker">Omni Model Route</p>
-                            <h2>AI Prediction Layer</h2>
+                            <p class="panel-kicker"><span class="badge bg-danger text-light me-2">MODULE 04</span>LoRa Communication & AI Diagnostics</p>
+                            <h2>Edge SX1278 Gateway & RAG AI Engine</h2>
                         </div>
-                        <span class="route-chip">/ai/route</span>
+                        <span class="route-chip">IEEE C57.104 RAG</span>
                     </div>
+
+                    <!-- LoRa Communication Gateway Status Bar -->
+                    <div class="lora-gateway-card mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success font-monospace" id="loraStatusBadge">SX1278 ONLINE</span>
+                                <strong class="small text-white" id="loraFreq">433.175 MHz · SF7 / BW 125kHz</strong>
+                            </div>
+                            <span class="small text-info font-monospace" id="loraLinkQuality">RSSI: -78.0 dBm | SNR: +9.2 dB</span>
+                        </div>
+                        <div class="lora-meta-grid">
+                            <div><span>Modulation</span><strong>LoRa CSS (4/5 CR)</strong></div>
+                            <div><span>Packet Delivery</span><strong id="loraDeliveryRate">100.0% (0 CRC errors)</strong></div>
+                            <div><span>Frame Buffer</span><strong id="loraFrameCount">-- packets</strong></div>
+                            <div><span>Safety Interlock</span><strong class="text-success" id="loraRelayTier">Tier-1 Edge (&lt;10ms)</strong></div>
+                        </div>
+                    </div>
+
                     <div class="route-map">
-                        <div class="route-node active">Telemetry</div>
+                        <div class="route-node active">SX1278 Edge</div>
                         <div class="route-line"></div>
-                        <div class="route-node">Feature Store</div>
+                        <div class="route-node active">LoRa Gateway</div>
                         <div class="route-line"></div>
-                        <div class="route-node">ML Predictor</div>
+                        <div class="route-node">ESF Stress Fuser</div>
                         <div class="route-line"></div>
-                        <div class="route-node">RAG Diagnosis</div>
+                        <div class="route-node">RAG AI Diagnosis</div>
                     </div>
+
                     <div class="prediction-copy" id="aiSummary">
                         Waiting for latest telemetry frame.
                     </div>
-                    <div class="model-table">
-                        <div><span>RUL model</span><strong>THI slope + regression ready</strong></div>
-                        <div><span>Diagnostic model</span><strong>Local Ollama route</strong></div>
-                        <div><span>Safety role</span><strong>Decision support only</strong></div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25">
+                        <div class="model-table w-75 m-0">
+                            <div><span>RUL model</span><strong>THI slope + regression ready</strong></div>
+                            <div><span>Diagnostic model</span><strong>Local Ollama route</strong></div>
+                            <div><span>Safety role</span><strong>Decision support only</strong></div>
+                        </div>
+                        <button class="btn btn-primary btn-sm px-3 py-2 fw-bold font-monospace shadow" id="cardDiagnoseBtn" type="button">
+                            ⚡ Run Diagnosis
+                        </button>
                     </div>
                 </article>
 
-                <article class="panel risk-panel">
+                <!-- MODULE 03: Environmental Risk Fusion -->
+                <article class="panel risk-panel" id="module-risk">
                     <div class="panel-head">
                         <div>
-                            <p class="panel-kicker">Environmental Fusion</p>
-                            <h2>Fire & Site Risk</h2>
+                            <p class="panel-kicker"><span class="badge bg-warning text-dark me-2">MODULE 03</span>Environmental Risk Fusion</p>
+                            <h2>Fire Weather Index (FWI) & Site Hazard</h2>
                         </div>
                         <span class="risk-pill" id="riskLevel">LOW</span>
                     </div>
                     <div class="risk-score"><span id="fwiValue">--</span><small>FWI</small></div>
                     <div class="risk-meter"><span id="riskMeter"></span></div>
                     <div class="weather-grid">
-                        <div><span>Ambient</span><strong id="ambientValue">-- C</strong></div>
-                        <div><span>Humidity</span><strong id="humidityValue">--%</strong></div>
-                        <div><span>Wind</span><strong id="windValue">-- km/h</strong></div>
+                        <div><span>Ambient Temp</span><strong id="ambientValue">-- C</strong></div>
+                        <div><span>Rel Humidity</span><strong id="humidityValue">--%</strong></div>
+                        <div><span>Wind Speed</span><strong id="windValue">-- km/h</strong></div>
                     </div>
                     <p class="risk-description" id="riskDescription">Environmental profile loading.</p>
                 </article>
 
+                <!-- MODULE 02: Spare & Component Forecast (Maintenance Intelligence) -->
                 <article class="panel maintenance-panel" id="maintenance">
                     <div class="panel-head">
                         <div>
-                            <p class="panel-kicker">Maintenance Intelligence</p>
-                            <h2>Spare & Component Forecast</h2>
+                            <p class="panel-kicker"><span class="badge bg-primary text-dark me-2">MODULE 02</span>Maintenance Intelligence</p>
+                            <h2>Spare & Component Forecast (Life Prediction)</h2>
                         </div>
                         <span class="asset-tag" id="maintenanceMode">Predictive</span>
                     </div>
                     <div class="parts-list" id="partsList"></div>
                 </article>
 
+                <!-- Operations Log & Event Timeline -->
                 <article class="panel timeline-panel">
                     <div class="panel-head">
                         <div>
@@ -427,7 +503,67 @@
         </main>
     </div>
 
+    <!-- Interactive AI Diagnostic Report Modal (Module 04) -->
+    <div class="modal fade" id="aiDiagModal" tabindex="-1" aria-labelledby="aiDiagModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content text-light border-0 shadow-lg" style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(24px); border: 1px solid rgba(0, 240, 255, 0.35) !important;">
+                <div class="modal-header border-bottom border-secondary border-opacity-25 pb-3">
+                    <div>
+                        <span class="badge bg-danger text-light font-monospace mb-1">MODULE 04 · LOCAL RAG AI DIAGNOSTICS</span>
+                        <h4 class="modal-title fw-bold text-white" id="aiDiagModalLabel">Transformer Health & Risk Diagnostic Report</h4>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 font-sans" id="aiDiagModalBody">
+                    <div class="text-center py-5" id="diagLoadingState">
+                        <div class="spinner-border text-info mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                        <p class="text-info font-monospace">Executing Local AI RAG Retrieval against IEEE C57 & NFPA 850 Corpus...</p>
+                    </div>
+                    <div id="diagContentState" style="display: none;">
+                        <!-- Severity & Root Cause Banner -->
+                        <div class="p-3 mb-3 rounded border" id="diagSeverityBanner" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4) !important;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge font-monospace px-2 py-1" id="diagSeverityCode">SEV-1 CRITICAL</span>
+                                <small class="text-muted font-monospace" id="diagTimestamp">2026-10-09 22:00:00</small>
+                            </div>
+                            <h5 class="fw-bold mb-0 text-white" id="diagLikelyCause">Thermal Runaway / Insulation Degradation</h5>
+                        </div>
+
+                        <!-- Technician Action Playbook -->
+                        <div class="mb-4">
+                            <h6 class="text-info font-monospace text-uppercase fw-bold mb-2">📋 Field Technician Step-by-Step Playbook</h6>
+                            <ol class="list-group list-group-numbered" id="diagPlaybookList" style="--bs-list-group-bg: rgba(30, 41, 59, 0.6); --bs-list-group-color: #f8fafc; --bs-list-group-border-color: rgba(255,255,255,0.08);">
+                            </ol>
+                        </div>
+
+                        <!-- Recommended Instruments -->
+                        <div class="mb-4">
+                            <h6 class="text-warning font-monospace text-uppercase fw-bold mb-2">🧰 Required Field Testing Instruments</h6>
+                            <div class="d-flex flex-wrap gap-2" id="diagInstrumentsList">
+                            </div>
+                        </div>
+
+                        <!-- RAG Grounded IEEE Citations -->
+                        <div class="mb-3 p-3 rounded" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08);">
+                            <h6 class="text-success font-monospace text-uppercase fw-bold mb-1">📚 Grounded Standards Citations (IEEE / IEC / NFPA)</h6>
+                            <p class="small text-muted mb-0" id="diagRagReferences">IEEE C57.91-2011 (Loading Guide), IEEE C57.104 (DGA Analysis), NFPA 850 (Fire Protection for Generating Plants & Converter Stations)</p>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center small text-muted font-monospace pt-2 border-top border-secondary border-opacity-25">
+                            <span id="diagModelUsed">Engine: Phi-3-Mini / Grounded RAG</span>
+                            <span class="text-warning" id="diagDisclaimer">⚠️ Decision support only. De-energize before physical inspection.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-secondary btn-sm font-monospace" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-info btn-sm font-monospace fw-bold" id="diagReRunBtn">🔄 Re-Run Analysis</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=20260920"></script>
+    <script src="app.js?v=20261009-v3"></script>
 </body>
 </html>

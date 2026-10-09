@@ -35,6 +35,7 @@ const scenarios = [
 
 const history = [];
 const signalHistory = { voltage: [], temperature: [], vibration: [] };
+const analyticsHistory = { temperature: [], current: [] };
 let scenarioIndex = 0;
 let usingApi = false;
 
@@ -142,7 +143,16 @@ function normalizeApiPayload(data) {
     const protection = payload.protection || calculateProtection(tel);
     const environmental = payload.environmental_risk || calculateEnvironmentalRisk(tel);
     const prediction = payload.prediction || calculatePrediction(stress);
-    return { telemetry: tel, stress, protection, environmental, prediction };
+    const lora = payload.lora || {
+        frequency: "433.175 MHz",
+        spreading_factor: "SF7 / BW 125 kHz",
+        rssi: -78.0,
+        snr: 9.2,
+        packet_loss: 0.0,
+        gateway_status: "ONLINE (P2P Link Active)",
+        packet_count: 1
+    };
+    return { telemetry: tel, stress, protection, environmental, prediction, lora };
 }
 
 function simulatedPayload() {
@@ -164,7 +174,16 @@ function simulatedPayload() {
         stress,
         protection: calculateProtection(base),
         environmental: calculateEnvironmentalRisk(base),
-        prediction: calculatePrediction(stress)
+        prediction: calculatePrediction(stress),
+        lora: {
+            frequency: "433.175 MHz",
+            spreading_factor: "SF7 / BW 125 kHz",
+            rssi: -78.0 + (Math.sin(now / 1500) * 1.5),
+            snr: 9.2 + (Math.cos(now / 2000) * 0.4),
+            packet_loss: 0.0,
+            gateway_status: "ONLINE (Simulation)",
+            packet_count: history.length
+        }
     };
 }
 
@@ -200,30 +219,51 @@ function setStress(id, value) {
 
 function updateTwin(tel, protection) {
     const tripped = protection.is_tripped;
-    $("modelAlert").textContent = tripped ? "PROTECTION TRIPPED" : "PROTECTION ARMED";
-    $("modelAlert").style.color = tripped ? "var(--red)" : "var(--muted)";
-    $("modelTelemetry").textContent = `OIL ${tel.oil_level} / ${Number(tel.temperature).toFixed(0)} C`;
-    $("relayBlade").setAttribute("x2", tripped ? "462" : "468");
-    $("relayBlade").setAttribute("y2", tripped ? "130" : "164");
-    $("relayBlade").style.stroke = tripped ? "var(--red)" : "var(--green)";
-    $("loadLine").style.stroke = tripped ? "rgba(148, 163, 184, 0.36)" : "url(#flowGradient)";
-
-    if (tel.oil_level === "CRITICAL") {
-        $("oilLevel").setAttribute("y", "204");
-        $("oilLevel").setAttribute("height", "50");
-        $("oilLevel").style.fill = "rgba(239, 68, 68, 0.22)";
-    } else if (tel.oil_level === "LOW") {
-        $("oilLevel").setAttribute("y", "150");
-        $("oilLevel").setAttribute("height", "104");
-        $("oilLevel").style.fill = "rgba(245, 158, 11, 0.18)";
-    } else {
-        $("oilLevel").setAttribute("y", "92");
-        $("oilLevel").setAttribute("height", "162");
-        $("oilLevel").style.fill = "rgba(56, 189, 248, 0.16)";
+    const modelAlert = $("modelAlert");
+    if (modelAlert) {
+        modelAlert.textContent = tripped ? "PROTECTION TRIPPED" : "PROTECTION ARMED";
+        modelAlert.style.color = tripped ? "var(--red)" : "var(--muted)";
+    }
+    const modelTelemetry = $("modelTelemetry");
+    if (modelTelemetry) {
+        modelTelemetry.textContent = `OIL ${tel.oil_level} / ${Number(tel.temperature).toFixed(0)} C`;
+    }
+    const relayBlade = $("relayBlade");
+    if (relayBlade) {
+        relayBlade.setAttribute("x2", tripped ? "462" : "468");
+        relayBlade.setAttribute("y2", tripped ? "130" : "164");
+        relayBlade.style.stroke = tripped ? "var(--red)" : "var(--green)";
+    }
+    const loadLine = $("loadLine");
+    if (loadLine) {
+        loadLine.style.stroke = tripped ? "rgba(148, 163, 184, 0.36)" : "url(#flowGradient)";
     }
 
-    $("primaryCoil").style.opacity = tel.temperature > 80 ? "1" : "0.86";
-    $("tankBody").style.transform = tel.vibration > 0.5 ? "translate(2px, -1px)" : "none";
+    const oilLevel = $("oilLevel");
+    if (oilLevel) {
+        if (tel.oil_level === "CRITICAL") {
+            oilLevel.setAttribute("y", "204");
+            oilLevel.setAttribute("height", "50");
+            oilLevel.style.fill = "rgba(239, 68, 68, 0.22)";
+        } else if (tel.oil_level === "LOW") {
+            oilLevel.setAttribute("y", "150");
+            oilLevel.setAttribute("height", "104");
+            oilLevel.style.fill = "rgba(245, 158, 11, 0.18)";
+        } else {
+            oilLevel.setAttribute("y", "92");
+            oilLevel.setAttribute("height", "162");
+            oilLevel.style.fill = "rgba(56, 189, 248, 0.16)";
+        }
+    }
+
+    const primaryCoil = $("primaryCoil");
+    if (primaryCoil) {
+        primaryCoil.style.opacity = tel.temperature > 80 ? "1" : "0.86";
+    }
+    const tankBody = $("tankBody");
+    if (tankBody) {
+        tankBody.style.transform = tel.vibration > 0.5 ? "translate(2px, -1px)" : "none";
+    }
 }
 
 function partsForecast(tel, stress, env) {
@@ -334,23 +374,186 @@ function updateSignalGraphs(tel) {
             const normalized = clamp((value - signal.min) / (signal.max - signal.min), 0, 1);
             return `${x.toFixed(1)},${(40 - normalized * 32).toFixed(1)}`;
         }).join(" ");
-        $(signal.trace).setAttribute("points", points);
-        $(`${signal.key}Area`).setAttribute("points", `${points} 180,44 0,44`);
-        $(signal.valueId).textContent = `${fmt(signal.value, signal.key === "vibration" ? 3 : 1)}${signal.unit}`;
-        $(signal.statusId).textContent = signal.status;
+
+        const traceEl = $(signal.trace);
+        if (traceEl) traceEl.setAttribute("points", points);
+
+        const areaEl = $(`${signal.key}Area`);
+        if (areaEl) areaEl.setAttribute("points", `${points} 180,44 0,44`);
+
+        const valEl = $(signal.valueId);
+        if (valEl) valEl.textContent = `${fmt(signal.value, signal.key === "vibration" ? 3 : 1)}${signal.unit}`;
+
+        const statusEl = $(signal.statusId);
+        if (statusEl) statusEl.textContent = signal.status;
     });
 }
 
+let wavePhase = 0;
+let latestPayload = null;
+
+function updateSpatialDynamicGraphs(tel, stress) {
+    wavePhase += 0.06;
+
+    // 1. Calculate dynamic wave peak amplitudes based on live telemetry stress
+    const vAmp = 14 + (stress.s_v * 24) + Math.sin(wavePhase * 1.2) * 4;
+    const iAmp = 12 + (stress.s_i * 20) + Math.cos(wavePhase * 1.5) * 3.5;
+    const vibAmp = 10 + (stress.s_vib * 26) + Math.sin(wavePhase * 2.0) * 5;
+    const thermalPeakY = clamp(60 - (stress.s_t * 35) + Math.sin(wavePhase * 0.9) * 8, 15, 80);
+
+    // 2. Generate smooth sine wave paths for Graph (a)
+    // s-axis (Voltage - Cyan)
+    let dMeasuredV = "M 45 45";
+    for (let x = 45; x <= 380; x += 15) {
+        const y = 45 + Math.sin((x - 45) * 0.05 + wavePhase) * vAmp;
+        dMeasuredV += ` L ${x} ${y.toFixed(1)}`;
+    }
+    let dPredictedV = "M 380 45";
+    for (let x = 380; x <= 505; x += 15) {
+        const y = 45 + Math.sin((x - 45) * 0.08 + wavePhase * 1.8) * (vAmp * 1.4);
+        dPredictedV += ` L ${x} ${y.toFixed(1)}`;
+    }
+
+    // y-axis (Current - Lime)
+    let dMeasuredI = "M 45 105";
+    for (let x = 45; x <= 380; x += 15) {
+        const y = 105 + Math.sin((x - 45) * 0.05 + wavePhase + 1.5) * iAmp;
+        dMeasuredI += ` L ${x} ${y.toFixed(1)}`;
+    }
+    let dPredictedI = "M 380 105";
+    for (let x = 380; x <= 505; x += 15) {
+        const y = 105 + Math.cos((x - 45) * 0.07 + wavePhase * 1.4) * (iAmp * 1.3);
+        dPredictedI += ` L ${x} ${y.toFixed(1)}`;
+    }
+
+    // z-axis (Vibration - Pink/Purple)
+    let dMeasuredVib = "M 45 165";
+    for (let x = 45; x <= 380; x += 15) {
+        const y = 165 + Math.sin((x - 45) * 0.05 + wavePhase + 3.0) * vibAmp;
+        dMeasuredVib += ` L ${x} ${y.toFixed(1)}`;
+    }
+    let dPredictedVib = "M 380 165";
+    for (let x = 380; x <= 505; x += 15) {
+        const y = 165 + Math.sin((x - 45) * 0.09 + wavePhase * 2.2) * (vibAmp * 1.5);
+        dPredictedVib += ` L ${x} ${y.toFixed(1)}`;
+    }
+
+    // Update SVG paths in Graph (a)
+    const cardA = document.querySelectorAll(".wave-graph-card")[0];
+    if (cardA) {
+        const measuredVEl = cardA.querySelector(".wave-path.measured-v");
+        const predictedVEl = cardA.querySelector(".wave-path.predicted-v");
+        const measuredIEl = cardA.querySelector(".wave-path.measured-i");
+        const predictedIEl = cardA.querySelector(".wave-path.predicted-i");
+        const measuredVibEl = cardA.querySelector(".wave-path.measured-vib");
+        const predictedVibEl = cardA.querySelector(".wave-path.predicted-vib");
+
+        if (measuredVEl) measuredVEl.setAttribute("d", dMeasuredV);
+        if (predictedVEl) predictedVEl.setAttribute("d", dPredictedV);
+        if (measuredIEl) measuredIEl.setAttribute("d", dMeasuredI);
+        if (predictedIEl) predictedIEl.setAttribute("d", dPredictedI);
+        if (measuredVibEl) measuredVibEl.setAttribute("d", dMeasuredVib);
+        if (predictedVibEl) predictedVibEl.setAttribute("d", dPredictedVib);
+    }
+
+    // 3. Dynamic Anomaly Peak Focus Circles Y-positions
+    const yPeakA = 45 + Math.sin((435 - 45) * 0.08 + wavePhase * 1.8) * (vAmp * 1.4);
+    const yPeakB = 105 + Math.cos((435 - 45) * 0.07 + wavePhase * 1.4) * (iAmp * 1.3);
+    const yPeakVib = 165 + Math.sin((435 - 45) * 0.09 + wavePhase * 2.2) * (vibAmp * 1.5);
+
+    const focusGroups = document.querySelectorAll(".graph-peak-focus");
+    if (focusGroups[0]) focusGroups[0].setAttribute("transform", `translate(435, ${yPeakA.toFixed(1)})`);
+    if (focusGroups[1]) focusGroups[1].setAttribute("transform", `translate(435, ${yPeakB.toFixed(1)})`);
+    if (focusGroups[2]) focusGroups[2].setAttribute("transform", `translate(435, ${yPeakVib.toFixed(1)})`);
+
+    // 4. Update Graph (c) Thermal Tension Peak
+    const dPredictedThermal = `M 380 125 L 390 125 L 395 ${thermalPeakY.toFixed(1)} L 445 ${thermalPeakY.toFixed(1)} L 450 125 L 505 125`;
+    const cardC = document.querySelectorAll(".wave-graph-card")[1];
+    if (cardC) {
+        const cardCPred = cardC.querySelector(".wave-path.predicted-v");
+        if (cardCPred) cardCPred.setAttribute("d", dPredictedThermal);
+    }
+
+    if (focusGroups[3]) focusGroups[3].setAttribute("transform", `translate(420, ${thermalPeakY.toFixed(1)})`);
+
+    // 5. Update SVG Leader Lines dynamically to track moving focal circles!
+    const lineAEl = document.querySelector(".leader-line.line-a");
+    const lineBEl = document.querySelector(".leader-line.line-b");
+    const lineCEl = document.querySelector(".leader-line.line-c");
+
+    const lineAyStart = 72 + (yPeakA * 0.55);
+    if (lineAEl) lineAEl.setAttribute("d", `M 475 ${lineAyStart.toFixed(1)} C 600 ${lineAyStart.toFixed(1)}, 680 145, 840 145`);
+
+    const lineByStart = 72 + (yPeakB * 0.55);
+    if (lineBEl) lineBEl.setAttribute("d", `M 475 ${lineByStart.toFixed(1)} C 610 ${lineByStart.toFixed(1)}, 700 230, 880 230`);
+
+    const lineCyStart = 345 + (thermalPeakY * 0.85);
+    if (lineCEl) lineCEl.setAttribute("d", `M 475 ${lineCyStart.toFixed(1)} C 610 ${lineCyStart.toFixed(1)}, 710 425, 860 425`);
+}
+
+function updateAnalytics(tel, stress) {
+    const temperatureLimit = 85;
+    const currentLimit = 15;
+    const vibrationLimit = 0.5;
+    const temperaturePercent = tel.temperature / temperatureLimit * 100;
+    const currentPercent = tel.current / currentLimit * 100;
+    analyticsHistory.temperature.push(temperaturePercent);
+    analyticsHistory.current.push(currentPercent);
+    Object.values(analyticsHistory).forEach((values) => { if (values.length > 24) values.shift(); });
+
+    const trendPath = (values) => values.map((value, index) => {
+        const x = 42 + index / Math.max(values.length - 1, 1) * 548;
+        const y = 136 - clamp(value, 0, 100) / 100 * 116;
+        return `${index ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join(" ");
+    $("temperatureTrend").setAttribute("d", trendPath(analyticsHistory.temperature));
+    $("currentTrend").setAttribute("d", trendPath(analyticsHistory.current));
+    $("analyticsTemp").textContent = `${fmt(tel.temperature, 1)} °C · ${fmt(temperaturePercent, 0)}%`;
+    $("analyticsCurrent").textContent = `${fmt(tel.current, 1)} A · ${fmt(currentPercent, 0)}%`;
+    $("analyticsUpdated").textContent = `Updated ${nowTime()}`;
+
+    const readings = [
+        { name: "Voltage deviation", value: tel.voltage, unit: "V", percent: Math.abs(tel.voltage - CONFIG.nominalVoltage) / (CONFIG.nominalVoltage * 0.1) * 100, detail: "230 V nominal · ±10% band", status: Math.abs(tel.voltage - CONFIG.nominalVoltage) > CONFIG.nominalVoltage * 0.1 ? "warning" : "healthy" },
+        { name: "Load current", value: tel.current, unit: "A", percent: currentPercent, detail: "15 A limit", status: currentPercent >= 100 ? "critical" : currentPercent >= 85 ? "warning" : "healthy" },
+        { name: "Winding temperature", value: tel.temperature, unit: "°C", percent: temperaturePercent, detail: "85 °C trip", status: temperaturePercent >= 100 ? "critical" : temperaturePercent >= 85 ? "warning" : "healthy" },
+        { name: "Vibration", value: tel.vibration, unit: "g", percent: tel.vibration / vibrationLimit * 100, detail: "0.50 g limit", status: tel.vibration >= vibrationLimit ? "critical" : tel.vibration >= vibrationLimit * 0.8 ? "warning" : "healthy" }
+    ];
+    const ticks = (values) => values.map((tick) => `<span>${tick}%</span>`).join("");
+    const utilizationBars = readings.map((item) => {
+        const width = clamp(item.percent, 0, 120) / 120 * 100;
+        const color = item.status === "critical" ? "#ef4444" : item.status === "warning" ? "#f59e0b" : "#22c55e";
+        const status = item.status === "healthy" ? "Normal" : item.status === "warning" ? "Near limit" : "At / over limit";
+        return `<div class="bar-chart-row"><div class="bar-chart-name"><strong>${item.name}</strong><small>${fmt(item.value, item.unit === "g" ? 3 : 1)} ${item.unit} · ${item.detail}</small></div><div class="bar-plot limit-plot" role="img" aria-label="${item.name}: ${fmt(item.percent, 0)} percent of reference, ${status}"><span style="width:${width.toFixed(1)}%;background:${color}"></span></div><strong class="bar-chart-value">${fmt(item.percent, 0)}%</strong></div>`;
+    }).join("");
+    $("utilizationChart").innerHTML = `<div class="bar-chart-axis-row"><span></span><div class="bar-chart-axis">${ticks([0, 50, 100, 120])}</div><span></span></div>${utilizationBars}`;
+
+    const oilPenalty = tel.oil_level !== "NORMAL" ? 40 : 0;
+    const components = [
+        { name: "HV & LV bushings", score: clamp(100 - Math.abs(tel.voltage - CONFIG.nominalVoltage) * 0.8 - tel.vibration * 15, 0, 100) },
+        { name: "Winding assembly", score: clamp(100 - (tel.temperature - CONFIG.nominalTemperature) * 1.8 - Math.abs(tel.current - CONFIG.nominalCurrent) * 4, 0, 100) },
+        { name: "Oil & cooling", score: clamp(100 - (tel.temperature - CONFIG.nominalTemperature) * 1.2 - oilPenalty, 0, 100) },
+        { name: "Paper insulation", score: clamp(stress.thi * 0.95, 0, 100) }
+    ];
+    const componentBars = components.map(({ name, score }) => {
+        const status = score < 40 ? "critical" : score < 70 ? "warning" : "healthy";
+        const label = status === "healthy" ? "Healthy" : status === "warning" ? "Warning" : "Critical";
+        const color = status === "critical" ? "#ef4444" : status === "warning" ? "#f59e0b" : "#22c55e";
+        return `<div class="bar-chart-row"><div class="bar-chart-name"><strong>${name}</strong><small style="color:${color}">${label}</small></div><div class="bar-plot component-plot" role="img" aria-label="${name}: ${fmt(score, 0)} percent, ${label}"><span style="width:${score.toFixed(1)}%;background:${color}"></span><i class="health-threshold threshold-warning"></i><i class="health-threshold threshold-healthy"></i></div><strong class="bar-chart-value">${fmt(score, 0)}%</strong></div>`;
+    }).join("");
+    $("componentChart").innerHTML = `<div class="bar-chart-axis-row component-axis-row"><span></span><div class="bar-chart-axis">${ticks([0, 25, 50, 75, 100])}</div><span></span></div>${componentBars}`;
+}
+
 function render(payload) {
-    const { telemetry: tel, stress, protection, environmental: env, prediction } = payload;
+    latestPayload = payload;
+    const { telemetry: tel, stress, protection, environmental: env, prediction, lora } = payload;
     const tripped = protection.is_tripped;
 
-    $("thiValue").textContent = fmt(stress.thi, 1);
-    $("healthStatus").textContent = stress.health_status;
-    $("rulValue").textContent = fmt(prediction.rul_years, 1);
-    $("serviceDate").textContent = prediction.projected_service_date;
-    $("relayState").textContent = protection.relay_state;
-    $("tripReason").textContent = protection.trip_reason;
+    if ($("thiValue")) $("thiValue").textContent = fmt(stress.thi, 1);
+    if ($("healthStatus")) $("healthStatus").textContent = stress.health_status;
+    if ($("rulValue")) $("rulValue").textContent = fmt(prediction.rul_years, 1);
+    if ($("serviceDate")) $("serviceDate").textContent = prediction.projected_service_date;
+    if ($("relayState")) $("relayState").textContent = protection.relay_state;
+    if ($("tripReason")) $("tripReason").textContent = protection.trip_reason;
 
     setRing(stress.thi);
     setStress("sv", stress.s_v);
@@ -358,29 +561,117 @@ function render(payload) {
     setStress("st", stress.s_t);
     setStress("svib", stress.s_vib);
 
-    $("voltageValue").textContent = `${fmt(tel.voltage, 1)} V`;
-    $("currentValue").textContent = `${fmt(tel.current, 1)} A`;
-    $("temperatureValue").textContent = `${fmt(tel.temperature, 1)} C`;
-    $("vibrationValue").textContent = `${fmt(tel.vibration, 3)} g`;
+    if ($("voltageValue")) $("voltageValue").textContent = `${fmt(tel.voltage, 1)} V`;
+    if ($("currentValue")) $("currentValue").textContent = `${fmt(tel.current, 1)} A`;
+    if ($("temperatureValue")) $("temperatureValue").textContent = `${fmt(tel.temperature, 1)} C`;
+    if ($("vibrationValue")) $("vibrationValue").textContent = `${fmt(tel.vibration, 3)} g`;
     updateSignalGraphs(tel);
 
-    $("riskLevel").textContent = env.level;
-    $("riskLevel").className = `risk-pill ${env.level.toLowerCase()}`;
-    $("fwiValue").textContent = fmt(env.fwi, 1);
-    $("riskMeter").style.width = `${clamp(env.fwi, 0, 100)}%`;
-    $("ambientValue").textContent = `${fmt(tel.ambient_temp, 1)} C`;
-    $("humidityValue").textContent = `${fmt(tel.rel_humidity, 0)}%`;
-    $("windValue").textContent = `${fmt(tel.wind_speed, 1)} km/h`;
-    $("riskDescription").textContent = `${env.severity}. ${env.description}`;
+    if ($("riskLevel")) {
+        $("riskLevel").textContent = env.level;
+        $("riskLevel").className = `risk-pill ${env.level.toLowerCase()}`;
+    }
+    if ($("fwiValue")) $("fwiValue").textContent = fmt(env.fwi, 1);
+    if ($("riskMeter")) $("riskMeter").style.width = `${clamp(env.fwi, 0, 100)}%`;
+    if ($("ambientValue")) $("ambientValue").textContent = `${fmt(tel.ambient_temp, 1)} C`;
+    if ($("humidityValue")) $("humidityValue").textContent = `${fmt(tel.rel_humidity, 0)}%`;
+    if ($("windValue")) $("windValue").textContent = `${fmt(tel.wind_speed, 1)} km/h`;
+    if ($("riskDescription")) $("riskDescription").textContent = `${env.severity}. ${env.description}`;
 
-    document.querySelector(".danger-aware").classList.toggle("tripped", tripped);
-    document.querySelector(".twin-panel").classList.toggle("tripped", tripped);
-    $("maintenanceMode").textContent = tripped ? "Corrective" : "Predictive";
+    // Update LoRa Communication Telemetry (Module 04)
+    if (lora) {
+        if ($("loraFreq")) $("loraFreq").textContent = `${lora.frequency} · ${lora.spreading_factor}`;
+        if ($("loraLinkQuality")) $("loraLinkQuality").textContent = `RSSI: ${fmt(lora.rssi, 1)} dBm | SNR: ${fmt(lora.snr, 1)} dB`;
+        if ($("loraFrameCount")) $("loraFrameCount").textContent = `${lora.packet_count || history.length} frames`;
+        if ($("loraStatusBadge")) {
+            $("loraStatusBadge").textContent = `SX1278 ${lora.gateway_status ? "ONLINE" : "STANDBY"}`;
+        }
+    }
+
+    const dangerAwareEl = document.querySelector(".danger-aware");
+    if (dangerAwareEl) dangerAwareEl.classList.toggle("tripped", tripped);
+
+    const twinPanelEl = document.querySelector(".twin-panel");
+    if (twinPanelEl) twinPanelEl.classList.toggle("tripped", tripped);
+
+    if ($("maintenanceMode")) $("maintenanceMode").textContent = tripped ? "Corrective" : "Predictive";
 
     updateTwin(tel, protection);
     renderParts(partsForecast(tel, stress, env));
     renderTimeline(payload);
     updateSummary(payload);
+    updateSpatialDynamicGraphs(tel, stress);
+    updateAnalytics(tel, stress);
+}
+
+async function runAiDiagnostics() {
+    const modalEl = document.getElementById("aiDiagModal");
+    if (!modalEl) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    const loadingEl = $("diagLoadingState");
+    const contentEl = $("diagContentState");
+    if (loadingEl) loadingEl.style.display = "block";
+    if (contentEl) contentEl.style.display = "none";
+
+    try {
+        const res = await fetch("/api/diagnose", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ override: false })
+        });
+        const report = await res.json();
+
+        if (loadingEl) loadingEl.style.display = "none";
+        if (contentEl) contentEl.style.display = "block";
+
+        if ($("diagSeverityCode")) $("diagSeverityCode").textContent = report.severity_code;
+        if ($("diagTimestamp")) $("diagTimestamp").textContent = report.timestamp;
+        if ($("diagLikelyCause")) $("diagLikelyCause").textContent = report.likely_cause;
+
+        const banner = $("diagSeverityBanner");
+        if (banner) {
+            const sev = String(report.severity_code || "").toUpperCase();
+            if (sev.includes("SEV-1") || sev.includes("CRITICAL")) {
+                banner.style.background = "rgba(239, 68, 68, 0.18)";
+                banner.style.borderColor = "rgba(239, 68, 68, 0.5)";
+                if ($("diagSeverityCode")) $("diagSeverityCode").className = "badge bg-danger font-monospace px-2 py-1";
+            } else if (sev.includes("SEV-2") || sev.includes("HAZARD")) {
+                banner.style.background = "rgba(245, 158, 11, 0.18)";
+                banner.style.borderColor = "rgba(245, 158, 11, 0.5)";
+                if ($("diagSeverityCode")) $("diagSeverityCode").className = "badge bg-warning text-dark font-monospace px-2 py-1";
+            } else {
+                banner.style.background = "rgba(34, 197, 94, 0.18)";
+                banner.style.borderColor = "rgba(34, 197, 94, 0.5)";
+                if ($("diagSeverityCode")) $("diagSeverityCode").className = "badge bg-success font-monospace px-2 py-1";
+            }
+        }
+
+        const playbookEl = $("diagPlaybookList");
+        if (playbookEl && report.technician_playbook) {
+            playbookEl.innerHTML = report.technician_playbook.map(step => `
+                <li class="list-group-item d-flex justify-content-between align-items-start py-2">
+                    <div class="ms-2 me-auto">
+                        ${step}
+                    </div>
+                </li>
+            `).join("");
+        }
+
+        const instrumentsEl = $("diagInstrumentsList");
+        if (instrumentsEl && report.recommended_instruments) {
+            instrumentsEl.innerHTML = report.recommended_instruments.map(inst => `
+                <span class="badge bg-secondary text-info font-monospace py-2 px-3 border border-info border-opacity-25">${inst}</span>
+            `).join("");
+        }
+
+        if ($("diagRagReferences")) $("diagRagReferences").textContent = Array.isArray(report.rag_references) ? report.rag_references.join(" · ") : report.rag_references;
+        if ($("diagModelUsed")) $("diagModelUsed").textContent = `Engine: ${report.model_used}`;
+        if ($("diagDisclaimer")) $("diagDisclaimer").textContent = report.disclaimer;
+    } catch (err) {
+        if (loadingEl) loadingEl.innerHTML = `<p class="text-danger">Failed to execute AI diagnostics: ${err.message}</p>`;
+    }
 }
 
 async function tick() {
@@ -388,11 +679,48 @@ async function tick() {
     render(payload);
 }
 
-$("refreshButton").addEventListener("click", tick);
-$("scenarioButton").addEventListener("click", () => {
-    scenarioIndex = (scenarioIndex + 1) % scenarios.length;
-    tick();
+// Event Listeners
+if ($("refreshButton")) $("refreshButton").addEventListener("click", tick);
+if ($("scenarioButton")) {
+    $("scenarioButton").addEventListener("click", () => {
+        scenarioIndex = (scenarioIndex + 1) % scenarios.length;
+        fetch("/api/scenario", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scenario: scenarios[scenarioIndex].name.toUpperCase().replace(/\s+/g, "_") })
+        }).catch(() => {});
+        tick();
+    });
+}
+if ($("topScenarioBtn")) {
+    $("topScenarioBtn").addEventListener("click", () => {
+        scenarioIndex = (scenarioIndex + 1) % scenarios.length;
+        fetch("/api/scenario", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scenario: scenarios[scenarioIndex].name.toUpperCase().replace(/\s+/g, "_") })
+        }).catch(() => {});
+        tick();
+    });
+}
+if ($("triggerAiDiagBtn")) $("triggerAiDiagBtn").addEventListener("click", runAiDiagnostics);
+if ($("cardDiagnoseBtn")) $("cardDiagnoseBtn").addEventListener("click", runAiDiagnostics);
+if ($("diagReRunBtn")) $("diagReRunBtn").addEventListener("click", runAiDiagnostics);
+
+// Smooth scroll for module pills
+document.querySelectorAll(".mod-pill").forEach(pill => {
+    pill.addEventListener("click", (e) => {
+        document.querySelectorAll(".mod-pill").forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+    });
 });
 
 tick();
 setInterval(tick, 1800);
+
+// Smooth 30fps animation loop for dynamic telemetry waveform graphs & tracking leader lines
+setInterval(() => {
+    if (latestPayload) {
+        updateSpatialDynamicGraphs(latestPayload.telemetry, latestPayload.stress);
+    }
+}, 50);

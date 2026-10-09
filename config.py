@@ -44,7 +44,12 @@ class TransformerConfig:
     DEFAULT_SERIAL_PORT: str = "COM3"
     DEFAULT_BAUD_RATE: int = 115200
 
-    # Offline AI Engine (Ollama)
+    # OmniRoute Unified Gateway Engine
+    OMNIROUTE_BASE_URL: str = "http://localhost:20128/v1"
+    OMNIROUTE_API_KEY: str = "sk-468aa9354078a1c3-46159c-30a5a577"
+    OMNIROUTE_MODEL: str = "smart-copy"    # or "auto", "smart", etc.
+
+    # Offline AI Engine Fallback (Ollama)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     DEFAULT_LLM_MODEL: str = "phi3"        # or "llama3"
 

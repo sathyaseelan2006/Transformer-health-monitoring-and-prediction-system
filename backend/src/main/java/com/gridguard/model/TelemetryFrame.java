@@ -4,11 +4,11 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * TelemetryFrame - Real-time sensor data from ESP32 edge node
+ * TelemetryFrame - Real-time sensor data from STM32 edge node
  * Stored in MongoDB for time-series analytics
  */
 @Data
