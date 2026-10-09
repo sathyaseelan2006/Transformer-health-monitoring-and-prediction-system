@@ -1168,13 +1168,49 @@ filterBtns.forEach(btn => {
     });
 });
 
-// Smooth scroll for module pills
+// Smooth scroll & active navigation handler for module pills
 document.querySelectorAll(".mod-pill").forEach(pill => {
     pill.addEventListener("click", (e) => {
-        document.querySelectorAll(".mod-pill").forEach(p => p.classList.remove("active"));
-        pill.classList.add("active");
+        const targetId = pill.getAttribute("href");
+        if (targetId && targetId.startsWith("#")) {
+            const targetEl = document.querySelector(targetId);
+            if (targetEl) {
+                e.preventDefault();
+                targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                document.querySelectorAll(".mod-pill").forEach(p => p.classList.remove("active"));
+                pill.classList.add("active");
+                if (window.history && window.history.pushState) {
+                    window.history.pushState(null, null, targetId);
+                }
+            }
+        }
     });
 });
+
+// Auto-highlight active pill based on scroll position
+if ("IntersectionObserver" in window) {
+    const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.getAttribute("id");
+                if (id) {
+                    document.querySelectorAll(".mod-pill").forEach(p => {
+                        if (p.getAttribute("href") === `#${id}`) {
+                            p.classList.add("active");
+                        } else {
+                            p.classList.remove("active");
+                        }
+                    });
+                }
+            }
+        });
+    }, { rootMargin: "-20% 0px -70% 0px", threshold: 0 });
+
+    ["status-performance", "module-sensing", "module-health", "module-risk", "module-lora-ai"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) sectionObserver.observe(el);
+    });
+}
 
 tick();
 setInterval(tick, 1800);

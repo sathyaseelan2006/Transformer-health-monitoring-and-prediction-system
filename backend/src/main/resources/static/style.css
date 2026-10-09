@@ -407,18 +407,29 @@ body::after {
 }
 
 .hero-panel {
-    grid-row: span 2;
-}
-
 .hero-panel,
-.prediction-panel,
-.risk-panel,
 .timeline-panel {
     display: none;
 }
 
-.twin-panel {
+#status-performance,
+#module-sensing,
+#assets,
+#module-health,
+#module-risk,
+#module-lora-ai,
+.panel {
+    scroll-margin-top: 80px;
+}
+
+.twin-panel,
+.prediction-panel,
+.risk-panel,
+.env-fusion-card,
+.status-performance-panel,
+.analytics-panel {
     grid-column: 1 / -1;
+    display: block !important;
 }
 
 .twin-telemetry-layout {
@@ -1601,15 +1612,21 @@ model-viewer {
    4-MODULE ARCHITECTURE NAVIGATION & ENHANCEMENTS
    ========================================================================== */
 .module-nav-bar {
+    position: sticky;
+    top: 14px;
+    z-index: 100;
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 10px;
     margin: 18px 0 24px;
     padding: 10px 14px;
-    background: rgba(15, 23, 42, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(0, 240, 255, 0.3);
     border-radius: 12px;
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .mod-pill {

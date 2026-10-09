@@ -211,7 +211,7 @@
 
             <section class="dashboard-grid">
                 <!-- MODULE 01: Sensing & Data Acquisition -->
-                <article class="panel hero-panel" id="module-sensing">
+                <article class="panel hero-panel" id="module-sensing-raw">
                     <div class="panel-head">
                         <div>
                             <p class="panel-kicker"><span class="badge bg-info text-dark me-2">MODULE 01</span>Sensing & Edge Data Acquisition</p>
@@ -290,7 +290,7 @@
                 </article>
 
                 <!-- MODULE 01: 3D Spatial Digital Twin & Waveform Spectrum -->
-                <article class="panel twin-panel" id="assets">
+                <article class="panel twin-panel" id="module-sensing">
                     <div class="panel-head">
                         <div>
                             <p class="panel-kicker"><span class="badge bg-info text-dark me-2">MODULE 01</span>Spatial Telemetry Mapping & Digital Twin</p>
@@ -525,59 +525,6 @@
                     </div>
                 </article>
 
-                <!-- MODULE 04: LoRa Communication & AI Diagnostics Layer -->
-                <article class="panel prediction-panel" id="module-lora-ai">
-                    <div class="panel-head">
-                        <div>
-                            <p class="panel-kicker"><span class="badge bg-danger text-light me-2">MODULE 04</span>LoRa Communication & AI Diagnostics</p>
-                            <h2>Edge SX1278 Gateway & RAG AI Engine</h2>
-                        </div>
-                        <span class="route-chip">IEEE C57.104 RAG</span>
-                    </div>
-
-                    <!-- LoRa Communication Gateway Status Bar -->
-                    <div class="lora-gateway-card mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-success font-monospace" id="loraStatusBadge">SX1278 ONLINE</span>
-                                <strong class="small text-white" id="loraFreq">433.175 MHz · SF7 / BW 125kHz</strong>
-                            </div>
-                            <span class="small text-info font-monospace" id="loraLinkQuality">RSSI: -78.0 dBm | SNR: +9.2 dB</span>
-                        </div>
-                        <div class="lora-meta-grid">
-                            <div><span>Modulation</span><strong>LoRa CSS (4/5 CR)</strong></div>
-                            <div><span>Packet Delivery</span><strong id="loraDeliveryRate">100.0% (0 CRC errors)</strong></div>
-                            <div><span>Frame Buffer</span><strong id="loraFrameCount">-- packets</strong></div>
-                            <div><span>Safety Interlock</span><strong class="text-success" id="loraRelayTier">Tier-1 Edge (&lt;10ms)</strong></div>
-                        </div>
-                    </div>
-
-                    <div class="route-map">
-                        <div class="route-node active">SX1278 Edge</div>
-                        <div class="route-line"></div>
-                        <div class="route-node active">LoRa Gateway</div>
-                        <div class="route-line"></div>
-                        <div class="route-node">ESF Stress Fuser</div>
-                        <div class="route-line"></div>
-                        <div class="route-node">RAG AI Diagnosis</div>
-                    </div>
-
-                    <div class="prediction-copy" id="aiSummary">
-                        Waiting for latest telemetry frame.
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25">
-                        <div class="model-table w-75 m-0">
-                            <div><span>RUL model</span><strong>THI slope + regression ready</strong></div>
-                            <div><span>Diagnostic model</span><strong>Local Ollama route</strong></div>
-                            <div><span>Safety role</span><strong>Decision support only</strong></div>
-                        </div>
-                        <button class="btn btn-primary btn-sm px-3 py-2 fw-bold font-monospace shadow" id="cardDiagnoseBtn" type="button">
-                            ⚡ Run Diagnosis
-                        </button>
-                    </div>
-                </article>
-
                 <!-- MODULE 03: Environmental Risk Fusion -->
                 <article class="panel risk-panel env-fusion-card" id="module-risk">
                     <div class="panel-head">
@@ -753,6 +700,59 @@
                             <span class="text-white small font-sans fw-bold" id="envActionTitle">Preventative Status Active</span>
                         </div>
                         <p class="text-muted small mb-0 font-sans" id="riskDescription">Loading environmental telemetry and multi-sensor kinetic calculations...</p>
+                    </div>
+                </article>
+
+                <!-- MODULE 04: LoRa Communication & AI Diagnostics Layer -->
+                <article class="panel prediction-panel" id="module-lora-ai">
+                    <div class="panel-head">
+                        <div>
+                            <p class="panel-kicker"><span class="badge bg-danger text-light me-2">MODULE 04</span>LoRa Communication & AI Diagnostics</p>
+                            <h2>Edge SX1278 Gateway & RAG AI Engine</h2>
+                        </div>
+                        <span class="route-chip">IEEE C57.104 RAG</span>
+                    </div>
+
+                    <!-- LoRa Communication Gateway Status Bar -->
+                    <div class="lora-gateway-card mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success font-monospace" id="loraStatusBadge">SX1278 ONLINE</span>
+                                <strong class="small text-white" id="loraFreq">433.175 MHz · SF7 / BW 125kHz</strong>
+                            </div>
+                            <span class="small text-info font-monospace" id="loraLinkQuality">RSSI: -78.0 dBm | SNR: +9.2 dB</span>
+                        </div>
+                        <div class="lora-meta-grid">
+                            <div><span>Modulation</span><strong>LoRa CSS (4/5 CR)</strong></div>
+                            <div><span>Packet Delivery</span><strong id="loraDeliveryRate">100.0% (0 CRC errors)</strong></div>
+                            <div><span>Frame Buffer</span><strong id="loraFrameCount">-- packets</strong></div>
+                            <div><span>Safety Interlock</span><strong class="text-success" id="loraRelayTier">Tier-1 Edge (&lt;10ms)</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="route-map">
+                        <div class="route-node active">SX1278 Edge</div>
+                        <div class="route-line"></div>
+                        <div class="route-node active">LoRa Gateway</div>
+                        <div class="route-line"></div>
+                        <div class="route-node">ESF Stress Fuser</div>
+                        <div class="route-line"></div>
+                        <div class="route-node">RAG AI Diagnosis</div>
+                    </div>
+
+                    <div class="prediction-copy" id="aiSummary">
+                        Waiting for latest telemetry frame.
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25">
+                        <div class="model-table w-75 m-0">
+                            <div><span>RUL model</span><strong>THI slope + regression ready</strong></div>
+                            <div><span>Diagnostic model</span><strong>Local Ollama route</strong></div>
+                            <div><span>Safety role</span><strong>Decision support only</strong></div>
+                        </div>
+                        <button class="btn btn-primary btn-sm px-3 py-2 fw-bold font-monospace shadow" id="cardDiagnoseBtn" type="button">
+                            ⚡ Run Diagnosis
+                        </button>
                     </div>
                 </article>
 
