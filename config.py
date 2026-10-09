@@ -53,4 +53,19 @@ class TransformerConfig:
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     DEFAULT_LLM_MODEL: str = "phi3"        # or "llama3"
 
+    # Apache Kafka Message Broker
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_TOPIC_TELEMETRY: str = "transformer.telemetry.raw"
+    KAFKA_TOPIC_HEALTH: str = "transformer.health.analytics"
+    KAFKA_TOPIC_ALERTS: str = "transformer.alerts.classified"
+    KAFKA_TOPIC_PROTECTION: str = "transformer.protection.events"
+    KAFKA_CLIENT_ID: str = "gridguard-substation-node-tx01"
+
+    # MySQL Database Management System
+    MYSQL_HOST: str = "localhost"
+    MYSQL_PORT: int = 3306
+    MYSQL_USER: str = "root"
+    MYSQL_PASSWORD: str = "root"
+    MYSQL_DATABASE: str = "gridguard_transformer_db"
+
 CONFIG = TransformerConfig()

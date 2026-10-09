@@ -15,6 +15,8 @@ from analytics import TransformerAnalytics
 from telemetry import LoRaSerialReceiver, TelemetryFrame
 from simulator import TransformerSimulator
 from ai_diagnostics import LocalAIDiagnosticEngine
+from database import DB
+from kafka_service import KAFKA
 
 app = FastAPI(title="GridGuard Substation Mission Control API")
 
@@ -163,7 +165,41 @@ def get_telemetry():
         oil_level=frame.oil_level
     )
 
-    # 3. Update history buffers
+    # 3. Classify Alerts based on multi-parameter thresholds
+    classified_alerts = analytics.classify_alerts(
+        v_real=frame.voltage,
+        i_real=frame.current,
+        t_real=frame.temperature,
+        vib_real=frame.vibration,
+        oil_level=frame.oil_level,
+        thi=stress.thi,
+        fwi=env_risk.fire_weather_index,
+        protection=prot
+    )
+
+    # 4. Stream to Apache Kafka Topics
+    kafka_events = KAFKA.publish_telemetry_stream(
+        telemetry=frame.to_dict(),
+        stress={
+            "s_v": stress.s_v, "s_i": stress.s_i, "s_t": stress.s_t,
+            "s_vib": stress.s_vib, "thi": stress.thi, "health_status": stress.health_status
+        },
+        env={"fwi": env_risk.fire_weather_index, "level": env_risk.risk_level, "severity": env_risk.consequence_severity},
+        protection={"is_tripped": prot.is_tripped, "trip_reason": prot.trip_reason, "relay_state": prot.relay_state},
+        alerts=classified_alerts
+    )
+
+    # 5. Persist to MySQL Database (with SQLite fallback)
+    db_result = DB.record_telemetry_and_events(
+        telemetry=frame.to_dict(),
+        stress={"s_v": stress.s_v, "s_i": stress.s_i, "s_t": stress.s_t, "s_vib": stress.s_vib, "thi": stress.thi, "health_status": stress.health_status},
+        env={"fwi": env_risk.fire_weather_index, "level": env_risk.risk_level, "severity": env_risk.consequence_severity, "description": env_risk.description},
+        protection={"is_tripped": prot.is_tripped, "trip_reason": prot.trip_reason, "relay_state": prot.relay_state},
+        alerts=classified_alerts,
+        kafka_events=kafka_events
+    )
+
+    # 6. Update history buffers
     now_ts = datetime.now()
     thi_history.append((now_ts, stress.thi))
     if len(thi_history) > 120:
@@ -181,7 +217,7 @@ def get_telemetry():
     if len(history) > 40:
         history.pop(0)
 
-    # 4. Service prediction
+    # 7. Service prediction
     service_pred = analytics.calculate_rul_and_next_service(stress.thi, thi_history)
 
     return {
@@ -219,11 +255,99 @@ def get_telemetry():
             "edge_sampling": "100 Hz / 12-bit ADC",
             "payload_size": "32 bytes (packed IEEE-754)"
         },
+        "alerts": classified_alerts,
+        "kafka": KAFKA.get_kafka_metrics(),
+        "database": DB.get_database_status(),
         "prediction": service_pred,
         "history": history,
         "mode": active_mode,
         "is_serial_connected": receiver.is_connected()
     }
+
+@app.get("/api/status-performance")
+def get_status_and_performance():
+    """Endpoint for the LIVE Status & Performance mission control cockpit."""
+    if active_mode == "ESP32_WIFI" and esp32_latest_frame:
+        frame = esp32_latest_frame
+    elif active_mode == "SERIAL" and receiver.is_connected():
+        frame = receiver.read_frame() or simulator.generate_frame("NORMAL")
+    else:
+        frame = simulator.generate_frame()
+
+    stress = analytics.compute_stress_and_thi(frame.voltage, frame.current, frame.temperature, frame.vibration)
+    env_risk = analytics.evaluate_environmental_risk_fusion(
+        frame.temperature, frame.ambient_temp, frame.rel_humidity, frame.wind_speed, frame.oil_level
+    )
+    prot = analytics.evaluate_deterministic_protection(
+        frame.voltage, frame.current, frame.temperature, frame.vibration, frame.oil_level
+    )
+    alerts = analytics.classify_alerts(
+        frame.voltage, frame.current, frame.temperature, frame.vibration,
+        frame.oil_level, stress.thi, env_risk.fire_weather_index, prot
+    )
+
+    critical_count = sum(1 for a in alerts if a.get("severity") == "CRITICAL")
+    warning_count = sum(1 for a in alerts if a.get("severity") == "WARNING")
+
+    # Determine overall live status
+    if prot.is_tripped:
+        live_status = "CRITICAL / TRIPPED"
+        status_color = "red"
+    elif stress.thi < 50.0 or critical_count > 0:
+        live_status = "SEVERE RISK / EMERGENCY"
+        status_color = "red"
+    elif stress.thi < 70.0 or warning_count > 0:
+        live_status = "DEGRADED / ELEVATED LOAD"
+        status_color = "amber"
+    else:
+        live_status = "ENERGIZED / OPTIMAL NOMINAL"
+        status_color = "green"
+
+    return {
+        "asset_id": frame.device_id or "STM32-TX01",
+        "substation": "Node Alpha (Feeder 04)",
+        "live_status": live_status,
+        "status_color": status_color,
+        "thi": stress.thi,
+        "load_utilization_pct": round((frame.current / CONFIG.I_NOMINAL) * 100, 1),
+        "thermal_headroom_c": round(max(0.0, CONFIG.T_TRIP_LIMIT - frame.temperature), 1),
+        "dielectric_integrity": "COMPROMISED" if frame.oil_level != "NORMAL" else "OPTIMAL (>30 kV BDV)",
+        "mechanical_stability": "VIBRATION EXCURSION" if frame.vibration > 0.4 else "STABLE (0.05g base)",
+        "active_alerts_count": {"critical": critical_count, "warning": warning_count, "total": len(alerts)},
+        "recent_alerts": alerts,
+        "kafka_stream": KAFKA.get_recent_stream_events(limit=15),
+        "kafka_metrics": KAFKA.get_kafka_metrics(),
+        "database": DB.get_database_status(),
+        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+@app.get("/api/alerts")
+def get_alerts_list(severity: Optional[str] = "ALL", limit: int = 30):
+    """Fetches classified alerts from active database with severity filter."""
+    return {
+        "alerts": DB.get_classified_alerts(limit=limit, severity=severity),
+        "filter": severity,
+        "total": len(DB.get_classified_alerts(limit=limit, severity=severity))
+    }
+
+@app.post("/api/alerts/{alert_id}/acknowledge")
+def acknowledge_alert_endpoint(alert_id: int):
+    """Acknowledges an active alert in the database."""
+    success = DB.acknowledge_alert(alert_id)
+    return {"status": "ok" if success else "error", "alert_id": alert_id}
+
+@app.get("/api/kafka/events")
+def get_kafka_live_events():
+    """Returns real-time Kafka event streams."""
+    return {
+        "events": KAFKA.get_recent_stream_events(limit=30),
+        "metrics": KAFKA.get_kafka_metrics()
+    }
+
+@app.get("/api/database/status")
+def get_db_status():
+    """Returns MySQL and SQLite status."""
+    return DB.get_database_status()
 
 @app.post("/api/scenario")
 def set_scenario(req: ScenarioRequest):

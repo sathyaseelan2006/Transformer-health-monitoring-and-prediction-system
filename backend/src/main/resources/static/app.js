@@ -589,10 +589,10 @@ function render(payload) {
     }
 
     const dangerAwareEl = document.querySelector(".danger-aware");
-    if (dangerAwareEl) dangerAwareEl.classList.toggle("tripped", tripped);
+    if (dangerAwareEl) dangerAwareEl.classList.toggle(tripped ? "tripped" : "");
 
     const twinPanelEl = document.querySelector(".twin-panel");
-    if (twinPanelEl) twinPanelEl.classList.toggle("tripped", tripped);
+    if (twinPanelEl) twinPanelEl.classList.toggle(tripped ? "tripped" : "");
 
     if ($("maintenanceMode")) $("maintenanceMode").textContent = tripped ? "Corrective" : "Predictive";
 
@@ -602,6 +602,170 @@ function render(payload) {
     updateSummary(payload);
     updateSpatialDynamicGraphs(tel, stress);
     updateAnalytics(tel, stress);
+    renderStatusAndPerformance(payload);
+}
+
+let currentAlertFilter = "ALL";
+let activeAlertsCache = [];
+
+function renderStatusAndPerformance(payload) {
+    const { telemetry: tel, stress, protection, alerts = [], kafka, database } = payload;
+    const tripped = protection.is_tripped;
+
+    const criticalCount = alerts.filter(a => a.severity === "CRITICAL").length;
+    const warningCount = alerts.filter(a => a.severity === "WARNING").length;
+    const infoCount = alerts.filter(a => a.severity === "INFO" || a.severity === "ADVISORY").length;
+
+    // Operational state banner
+    const statusTextEl = $("liveStatusText");
+    if (statusTextEl) {
+        if (tripped) {
+            statusTextEl.textContent = "CRITICAL / TRIPPED (CIRCUIT OPEN)";
+            statusTextEl.className = "text-danger";
+        } else if (stress.thi < 50 || criticalCount > 0) {
+            statusTextEl.textContent = "CRITICAL / SEVERE DEGRADATION";
+            statusTextEl.className = "text-danger";
+        } else if (stress.thi < 70 || warningCount > 0) {
+            statusTextEl.textContent = "WARNING / ELEVATED OPERATIONAL LOAD";
+            statusTextEl.className = "text-warning";
+        } else {
+            statusTextEl.textContent = "ENERGIZED / OPTIMAL NOMINAL";
+            statusTextEl.className = "text-success";
+        }
+    }
+
+    if ($("liveThiScore")) $("liveThiScore").textContent = `${fmt(stress.thi, 1)} / 100`;
+    if ($("liveRelayInterlock")) {
+        $("liveRelayInterlock").textContent = protection.relay_state;
+        $("liveRelayInterlock").className = tripped ? "text-danger font-monospace" : "text-success font-monospace";
+    }
+    if ($("liveModeBadge")) $("liveModeBadge").textContent = payload.mode || "STM32 / LoRa P2P";
+
+    // Headroom & metrics
+    const loadUtil = clamp((tel.current / CONFIG.nominalCurrent) * 100, 0, 150);
+    if ($("liveLoadUtilPct")) $("liveLoadUtilPct").textContent = `${fmt(loadUtil, 0)}% of 15A Limit`;
+    if ($("liveLoadBar")) {
+        $("liveLoadBar").style.width = `${Math.min(100, loadUtil)}%`;
+        $("liveLoadBar").className = loadUtil > 100 ? "progress-bar bg-danger" : loadUtil > 80 ? "progress-bar bg-warning" : "progress-bar bg-info";
+    }
+
+    const thermalMargin = Math.max(0, CONFIG.maxTemperature + 5 - tel.temperature);
+    if ($("liveThermalHeadroom")) $("liveThermalHeadroom").textContent = `${fmt(thermalMargin, 1)} °C margin to 85°C trip`;
+    if ($("liveThermalBar")) {
+        const thermalHeadroomPct = clamp((thermalMargin / 55) * 100, 0, 100);
+        $("liveThermalBar").style.width = `${thermalHeadroomPct}%`;
+        $("liveThermalBar").className = thermalMargin < 15 ? "progress-bar bg-danger" : thermalMargin < 25 ? "progress-bar bg-warning" : "progress-bar bg-success";
+    }
+
+    if ($("liveDielectricStatus")) {
+        const isOilOk = tel.oil_level === "NORMAL";
+        $("liveDielectricStatus").textContent = isOilOk ? "OPTIMAL (>30 kV BDV)" : `COMPROMISED (OIL ${tel.oil_level})`;
+        $("liveDielectricStatus").className = isOilOk ? "text-success" : "text-danger";
+    }
+
+    if ($("liveMechStability")) {
+        const isVibOk = tel.vibration < 0.25;
+        $("liveMechStability").textContent = isVibOk ? `STABLE (${fmt(tel.vibration, 3)}g piezo)` : `ELEVATED SPECTRUM (${fmt(tel.vibration, 3)}g)`;
+        $("liveMechStability").className = isVibOk ? "text-info" : "text-warning";
+    }
+
+    if (kafka && $("liveKafkaThroughput")) {
+        $("liveKafkaThroughput").textContent = `Kafka: ${kafka.throughput_msg_sec || 12.4} msg/s`;
+    }
+
+    if (database && $("dbStatusBadge")) {
+        $("dbStatusBadge").textContent = database.mysql_connected ? "MySQL 8.0 (Workbench Ready)" : "SQLite Local Engine";
+        $("dbStatusBadge").className = database.mysql_connected ? "badge bg-dark border border-success text-success font-monospace" : "badge bg-dark border border-warning text-warning font-monospace";
+    }
+
+    if ($("cockpitLiveTime")) $("cockpitLiveTime").textContent = `Live Sync ${nowTime()}`;
+
+    // Alert counts
+    if ($("alertCountAll")) $("alertCountAll").textContent = alerts.length;
+    if ($("alertCountCrit")) $("alertCountCrit").textContent = criticalCount;
+    if ($("alertCountWarn")) $("alertCountWarn").textContent = warningCount;
+    if ($("alertCountInfo")) $("alertCountInfo").textContent = infoCount;
+
+    activeAlertsCache = alerts;
+    renderAlertsStream();
+    renderKafkaTerminal(payload);
+}
+
+function renderAlertsStream() {
+    const listEl = $("alertsStreamList");
+    if (!listEl) return;
+
+    let filtered = activeAlertsCache;
+    if (currentAlertFilter !== "ALL") {
+        filtered = activeAlertsCache.filter(a => a.severity === currentAlertFilter);
+    }
+
+    if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="text-muted text-center py-4 small font-monospace">No active ${currentAlertFilter.toLowerCase()} alerts triggered.</div>`;
+        return;
+    }
+
+    listEl.innerHTML = filtered.map((a, idx) => {
+        const sevClass = a.severity === "CRITICAL" ? "critical" : a.severity === "WARNING" ? "warning" : "info";
+        const badgeColor = a.severity === "CRITICAL" ? "bg-danger text-light" : a.severity === "WARNING" ? "bg-warning text-dark" : "bg-info text-dark";
+        return `
+            <div class="alert-row ${sevClass}">
+                <div class="alert-main">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge ${badgeColor} font-monospace" style="font-size:0.65rem">${a.severity}</span>
+                        <span class="badge bg-secondary font-monospace" style="font-size:0.65rem">${a.category}</span>
+                        <strong class="small">${a.title}</strong>
+                    </div>
+                    <p>${a.message}</p>
+                </div>
+                <div class="alert-meta">
+                    <div>${a.value ? `${a.value} / ${a.threshold}` : ""}</div>
+                    <button class="btn btn-outline-light btn-sm py-0 px-2 mt-1 font-monospace" style="font-size:0.65rem" onclick="ackAlert(${idx})">ACK</button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+window.ackAlert = async function(idx) {
+    const alertItem = activeAlertsCache[idx];
+    if (alertItem) {
+        alertItem.message = `${alertItem.message} [ACKNOWLEDGED]`;
+        renderAlertsStream();
+        try {
+            await fetch(`/api/alerts/${idx + 1}/acknowledge`, { method: "POST" });
+        } catch (_) {}
+    }
+};
+
+let kafkaLogBuffer = [];
+function renderKafkaTerminal(payload) {
+    const termEl = $("kafkaTerminal");
+    if (!termEl) return;
+
+    const time = nowTime();
+    const tel = payload.telemetry || {};
+    const stress = payload.stress || {};
+
+    const newEntries = [
+        { time, topic: "transformer.telemetry.raw", msg: `device=${tel.device_id || 'STM32-TX01'} V=${fmt(tel.voltage,1)}V I=${fmt(tel.current,1)}A T=${fmt(tel.temperature,1)}C Vib=${fmt(tel.vibration,3)}g` },
+        { time, topic: "transformer.health.analytics", msg: `thi=${fmt(stress.thi,1)} status="${stress.health_status}" Sv=${fmt(stress.s_v,3)} Si=${fmt(stress.s_i,3)} St=${fmt(stress.s_t,3)}` }
+    ];
+
+    if (payload.protection && payload.protection.is_tripped) {
+        newEntries.push({ time, topic: "transformer.protection.events", msg: `TRIP_REASON="${payload.protection.trip_reason}" RELAY=OPEN_TRIPPED` });
+    }
+
+    kafkaLogBuffer.unshift(...newEntries);
+    if (kafkaLogBuffer.length > 20) kafkaLogBuffer.length = 20;
+
+    termEl.innerHTML = kafkaLogBuffer.map(e => `
+        <div class="kafka-log-entry">
+            <span class="k-time">${e.time}</span>
+            <span class="k-topic">[${e.topic}]</span>
+            <span class="k-msg">${e.msg}</span>
+        </div>
+    `).join("");
 }
 
 async function runAiDiagnostics() {
@@ -706,6 +870,17 @@ if ($("topScenarioBtn")) {
 if ($("triggerAiDiagBtn")) $("triggerAiDiagBtn").addEventListener("click", runAiDiagnostics);
 if ($("cardDiagnoseBtn")) $("cardDiagnoseBtn").addEventListener("click", runAiDiagnostics);
 if ($("diagReRunBtn")) $("diagReRunBtn").addEventListener("click", runAiDiagnostics);
+
+// Alert Filter buttons
+const filterBtns = document.querySelectorAll("#alertFilterGroup button");
+filterBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+        filterBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentAlertFilter = btn.getAttribute("data-filter") || "ALL";
+        renderAlertsStream();
+    });
+});
 
 // Smooth scroll for module pills
 document.querySelectorAll(".mod-pill").forEach(pill => {

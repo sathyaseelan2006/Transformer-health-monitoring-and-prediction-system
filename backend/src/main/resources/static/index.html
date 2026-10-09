@@ -31,7 +31,8 @@
             </header>
 
             <nav class="module-nav-bar" aria-label="Architecture Modules">
-                <a href="#module-sensing" class="mod-pill active"><span class="mod-num">01</span> Sensing & Data Acquisition</a>
+                <a href="#status-performance" class="mod-pill active"><span class="mod-num">LIVE</span> 🔴 Status & Performance</a>
+                <a href="#module-sensing" class="mod-pill"><span class="mod-num">01</span> Sensing & Data Acquisition</a>
                 <a href="#module-health" class="mod-pill"><span class="mod-num">02</span> Health Assessment & Life Prediction</a>
                 <a href="#module-risk" class="mod-pill"><span class="mod-num">03</span> Environmental Risk Fusion</a>
                 <a href="#module-lora-ai" class="mod-pill"><span class="mod-num">04</span> LoRa Telemetry & AI Diagnostics</a>
@@ -59,6 +60,126 @@
                     <div class="metric-caption" id="tripReason">Deterministic edge logic normal</div>
                 </article>
             </section>
+
+            <!-- =========================================================================
+                 LIVE STATUS & PERFORMANCE MISSION CONTROL (KAFKA STREAM + ALERTS + MYSQL)
+                 ========================================================================= -->
+            <article class="panel status-performance-panel mb-4" id="status-performance">
+                <div class="panel-head">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-danger live-pulse-badge">🔴 LIVE STREAMING</span>
+                            <span class="badge bg-dark border border-info text-info font-monospace">APACHE KAFKA TOPICS</span>
+                            <span class="badge bg-dark border border-success text-success font-monospace" id="dbStatusBadge">MySQL 8.0 DBMS</span>
+                        </div>
+                        <h2>Status & Performance Cockpit</h2>
+                        <p class="analytics-intro">Real-time asset operational state, continuous thermal/electrical headroom, multi-tier classified alert monitoring, and Kafka stream ingestion audit.</p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="asset-tag" id="cockpitLiveTime">Live Stream Synchronized</span>
+                    </div>
+                </div>
+
+                <!-- Top Performance Cockpit Row -->
+                <div class="status-cockpit-grid">
+                    <!-- Card 1: Asset State & Health -->
+                    <div class="perf-card status-hero-card">
+                        <div class="perf-card-head">
+                            <span>OPERATIONAL STATE</span>
+                            <span class="state-dot" id="liveStateDot"></span>
+                        </div>
+                        <div class="perf-hero-state">
+                            <h3 id="liveStatusText" class="text-success">ENERGIZED / OPTIMAL NOMINAL</h3>
+                            <p id="liveSubstationInfo" class="text-muted font-monospace small">Substation Node Alpha · Feeder 04 (25 kVA Transformer)</p>
+                        </div>
+                        <div class="perf-mini-stats">
+                            <div><span>Health Index</span><strong id="liveThiScore">97.2 / 100</strong></div>
+                            <div><span>Safety Relay</span><strong id="liveRelayInterlock">CLOSED (ENERGIZED)</strong></div>
+                            <div><span>Telemetry Mode</span><strong id="liveModeBadge">STM32 / LoRa P2P</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Headroom & Dynamic Performance Metrics -->
+                    <div class="perf-card">
+                        <div class="perf-card-head">
+                            <span>HEADROOM & UTILIZATION</span>
+                            <span class="font-monospace text-info small" id="liveKafkaThroughput">Kafka: 12.4 msg/s</span>
+                        </div>
+                        <div class="headroom-grid">
+                            <div class="headroom-item">
+                                <div class="d-flex justify-content-between small">
+                                    <span>Load Current Utilization</span>
+                                    <strong id="liveLoadUtilPct">66.0% of 15A</strong>
+                                </div>
+                                <div class="progress mt-1" style="height: 6px; background: rgba(255,255,255,0.1);">
+                                    <div class="progress-bar bg-info" id="liveLoadBar" style="width: 66%;"></div>
+                                </div>
+                            </div>
+                            <div class="headroom-item">
+                                <div class="d-flex justify-content-between small">
+                                    <span>Winding Thermal Headroom</span>
+                                    <strong id="liveThermalHeadroom">51.0 °C margin to 85°C trip</strong>
+                                </div>
+                                <div class="progress mt-1" style="height: 6px; background: rgba(255,255,255,0.1);">
+                                    <div class="progress-bar bg-success" id="liveThermalBar" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                            <div class="headroom-item">
+                                <div class="d-flex justify-content-between small">
+                                    <span>Dielectric Oil Integrity</span>
+                                    <strong class="text-success" id="liveDielectricStatus">OPTIMAL (>30 kV BDV)</strong>
+                                </div>
+                            </div>
+                            <div class="headroom-item">
+                                <div class="d-flex justify-content-between small">
+                                    <span>Mechanical Stability</span>
+                                    <strong class="text-info" id="liveMechStability">STABLE (0.052g piezo)</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Second Row: Classified Alerts Center + Live Kafka Activity Terminal -->
+                <div class="status-lower-grid mt-3">
+                    <!-- Classified Alerts Center -->
+                    <div class="alerts-center-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                            <div>
+                                <h3 class="h6 fw-bold text-white mb-0">🚨 Classified Alert Management</h3>
+                                <span class="text-muted small">Prioritized threshold triggers & safety events</span>
+                            </div>
+                            <div class="btn-group btn-group-sm font-monospace" role="group" id="alertFilterGroup">
+                                <button type="button" class="btn btn-outline-info active" data-filter="ALL">ALL (<span id="alertCountAll">0</span>)</button>
+                                <button type="button" class="btn btn-outline-danger" data-filter="CRITICAL">CRIT (<span id="alertCountCrit">0</span>)</button>
+                                <button type="button" class="btn btn-outline-warning" data-filter="WARNING">WARN (<span id="alertCountWarn">0</span>)</button>
+                                <button type="button" class="btn btn-outline-secondary" data-filter="INFO">INFO (<span id="alertCountInfo">0</span>)</button>
+                            </div>
+                        </div>
+                        <div class="alerts-stream-list" id="alertsStreamList">
+                            <div class="text-muted text-center py-4 small font-monospace">Waiting for classified alerts...</div>
+                        </div>
+                    </div>
+
+                    <!-- Live Kafka Activity Stream Terminal -->
+                    <div class="kafka-stream-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary font-monospace">KAFKA CLUSTER</span>
+                                <strong class="text-white small">Live Event Stream Bus</strong>
+                            </div>
+                            <span class="badge bg-dark border border-secondary text-light font-monospace small" id="kafkaLagBadge">Lag: 0 ms</span>
+                        </div>
+                        <div class="kafka-terminal" id="kafkaTerminal">
+                            <div class="kafka-log-entry">
+                                <span class="k-time">--:--:--</span>
+                                <span class="k-topic">transformer.telemetry.raw</span>
+                                <span class="k-msg">Initializing Kafka producer pipeline...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>
 
             <!-- MODULE 02: Health Assessment & Life Prediction Overview -->
             <article class="panel analytics-panel" id="module-health" aria-labelledby="analyticsTitle">
@@ -564,6 +685,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=20261009-v3"></script>
+    <script src="app.js?v=20261009-v4"></script>
 </body>
 </html>
