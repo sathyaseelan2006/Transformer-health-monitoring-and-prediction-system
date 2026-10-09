@@ -686,14 +686,14 @@ function updateAnalytics(tel, stress) {
         }).join("");
         if ($("utilizationChart")) $("utilizationChart").innerHTML = `<div class="bar-chart-axis-row"><span></span><div class="bar-chart-axis">${ticks([0, 50, 100, 120])}</div><span></span></div>${utilizationBars}`;
 
-        const oilPenalty = tel.oil_level !== "NORMAL" ? 40 : 0;
-        const thiVal = (stress && typeof stress.thi === "number") ? stress.thi : 95.0;
+        const rhVal = tel.rel_humidity !== undefined ? tel.rel_humidity : 50;
+        const motionVal = tel.motion_shake !== undefined ? tel.motion_shake : (tel.vibration || 0.05);
         const components = [
-            { name: "HV & LV bushings", score: clamp(100 - Math.abs(tel.voltage - CONFIG.nominalVoltage) * 0.8 - (tel.vibration || 0.05) * 15, 0, 100), metric: `${fmt(tel.voltage, 1)} V` },
-            { name: "Winding assembly & Core", score: clamp(100 - (tel.temperature - CONFIG.nominalTemperature) * 1.8 - Math.abs(tel.current - CONFIG.nominalCurrent) * 4, 0, 100), metric: `${fmt(tel.temperature, 1)} °C` },
-            { name: "Oil & cooling radiators", score: clamp(100 - (tel.temperature - CONFIG.nominalTemperature) * 1.2 - oilPenalty, 0, 100), metric: `Oil ${tel.oil_level || "NORMAL"}` },
-            { name: "Paper insulation (Kraft)", score: clamp(thiVal * 0.95, 0, 100), metric: `${fmt(thiVal, 1)} THI` },
-            { name: "Mechanical Shock Mounts", score: clamp(100 - (tel.vibration || 0.05) * 120, 0, 100), metric: `${fmt(tel.vibration || 0.05, 3)} g` }
+            { name: "Temperature Sensor (LM35 / PT100)", score: clamp(100 - Math.max(0, tel.temperature - CONFIG.nominalTemperature) * 1.8, 0, 100), metric: `${fmt(tel.temperature, 1)} °C` },
+            { name: "Humidity & Moisture Sensor (DHT11)", score: clamp(100 - Math.max(0, rhVal - 50) * 1.6, 0, 100), metric: `${fmt(rhVal, 0)} % RH` },
+            { name: "Motion & Earthquake Sensor (SW-420)", score: clamp(100 - (motionVal / 0.50) * 100, 0, 100), metric: `${fmt(motionVal, 3)} g` },
+            { name: "Voltage Sensor Channel (ZMPT101B)", score: clamp(100 - (Math.abs(tel.voltage - CONFIG.nominalVoltage) / 23.0) * 100, 0, 100), metric: `${fmt(tel.voltage, 1)} V` },
+            { name: "Current Sensor Channel (ACS712)", score: clamp(100 - (Math.abs(tel.current - CONFIG.nominalCurrent) / 5.0) * 100, 0, 100), metric: `${fmt(tel.current, 1)} A` }
         ];
         const componentBars = components.map(({ name, score, metric }) => {
             const status = score < 40 ? "critical" : score < 70 ? "warning" : "healthy";
@@ -710,7 +710,8 @@ function updateAnalytics(tel, stress) {
 function render(payload) {
     if (!payload) return;
     latestPayload = payload;
-    const { telemetry: tel, stress, protection, environmental: env, prediction, lora } = payload;
+    const { telemetry: tel, stress, protection, prediction, lora } = payload;
+    const env = payload.environmental || payload.environmental_risk;
     const tripped = protection && protection.is_tripped;
 
     try {

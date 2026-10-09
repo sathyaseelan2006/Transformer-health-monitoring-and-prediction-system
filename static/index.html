@@ -205,7 +205,7 @@
                         <div class="chart-current-values"><span>Temperature<strong id="analyticsTemp">--</strong></span><span>Load current<strong id="analyticsCurrent">--</strong></span></div>
                     </section>
                     <section class="analytics-card" aria-labelledby="utilizationTitle"><div class="analytics-card-heading"><div><h3 id="utilizationTitle">Operating limit utilization</h3><p>Current value and distance to the limit</p></div><span class="chart-unit">100% = LIMIT</span></div><div id="utilizationChart" aria-live="polite"></div><p class="chart-footnote">Voltage deviation: 230 V nominal, ±10% band. Limits: current 15 A, temperature 85 °C, vibration 0.50 g.</p></section>
-                    <section class="analytics-card analytics-components" aria-labelledby="componentChartTitle"><div class="analytics-card-heading"><div><h3 id="componentChartTitle">Subsystem health estimation</h3><p>Estimated condition score for each monitored assembly</p></div><span class="chart-unit">0–100%</span></div><div id="componentChart" aria-live="polite"></div><p class="chart-footnote">Healthy ≥ 70% · Warning 40–69% · Critical &lt; 40%. Scores are telemetry-derived estimates.</p></section>
+                    <section class="analytics-card analytics-components" aria-labelledby="componentChartTitle"><div class="analytics-card-heading"><div><h3 id="componentChartTitle">Prototype Sensor Channel Health</h3><p>Real-time operating status and integrity of physical hardware sensor channels</p></div><span class="chart-unit">0–100%</span></div><div id="componentChart" aria-live="polite"></div><p class="chart-footnote">Optimal ≥ 70% · Warning 40–69% · Critical &lt; 40%. Signal confidence derived from physical ADC telemetry.</p></section>
                 </div>
             </article>
 
@@ -608,42 +608,51 @@
                         </div>
                     </div>
 
-                    <!-- Computed Damage Breakdown Risk Bars -->
+                    <!-- Computed Damage Breakdown Risk Bars (Calculated directly from Prototype Sensors) -->
                     <div class="env-breakdown-grid mt-3">
-                        <!-- Bar A: Rust & Corrosion Possibility -->
+                        <!-- Bar A: Rust & Corrosion Possibility (Temp + Humidity) -->
                         <div class="risk-bar-card">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small text-light fw-bold">🟤 Rust & Atmospheric Corrosion Probability</span>
+                                <span class="small text-light fw-bold">🟤 Rust & Corrosion Possibility</span>
                                 <strong class="font-monospace text-warning small" id="rustRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
                                 <div class="risk-fill-bar bar-rust" id="rustRiskBar" style="width: 0%;"></div>
                             </div>
-                            <small class="text-muted font-monospace d-block mt-1" id="rustKineticsNote">Atmospheric condensation & iron oxidation kinetics</small>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <small class="text-warning font-monospace" style="font-size: 0.65rem;">Source: Temp + Humidity Sensors</small>
+                                <small class="text-muted font-monospace" style="font-size: 0.65rem;" id="rustKineticsNote">ISO 9223 Oxidation Rate</small>
+                            </div>
                         </div>
 
-                        <!-- Bar B: Seismic & Ground Shake Structural Damage -->
+                        <!-- Bar B: Seismic & Ground Shake Damage (Motion Sensor) -->
                         <div class="risk-bar-card">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small text-light fw-bold">⚡ Earthquake & Shake Structural Damage</span>
+                                <span class="small text-light fw-bold">⚡ Earthquake & Shake Damage</span>
                                 <strong class="font-monospace text-danger small" id="seismicRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
                                 <div class="risk-fill-bar bar-seismic" id="seismicRiskBar" style="width: 0%;"></div>
                             </div>
-                            <small class="text-muted font-monospace d-block mt-1" id="seismicKineticsNote">Foundation displacement & mechanical resonance threshold</small>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <small class="text-danger font-monospace" style="font-size: 0.65rem;">Source: Motion Sensor (SW-420)</small>
+                                <small class="text-muted font-monospace" style="font-size: 0.65rem;" id="seismicKineticsNote">Tremor Displacement</small>
+                            </div>
                         </div>
 
-                        <!-- Bar C: Ambient Thermal Stress -->
+                        <!-- Bar C: High Temperature Damage (Temp Sensor) -->
                         <div class="risk-bar-card">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small text-light fw-bold">☀️ Ambient Thermal Dissipation Hazard</span>
+                                <span class="small text-light fw-bold">☀️ High Temperature Damage</span>
                                 <strong class="font-monospace text-info small" id="thermalRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
                                 <div class="risk-fill-bar bar-thermal" id="thermalRiskBar" style="width: 0%;"></div>
                             </div>
-                            <small class="text-muted font-monospace d-block mt-1">Cooling radiator delta-T efficiency reduction</small>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <small class="text-info font-monospace" style="font-size: 0.65rem;">Source: Temp Sensor (LM35)</small>
+                                <small class="text-muted font-monospace" style="font-size: 0.65rem;">Thermal Stress Level</small>
+                            </div>
                         </div>
                     </div>
 

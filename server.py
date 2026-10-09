@@ -233,6 +233,21 @@ def get_telemetry(scenario: Optional[str] = None):
             "thi": stress.thi,
             "health_status": stress.health_status
         },
+        "environmental": {
+            "fwi": env_risk.fire_weather_index,
+            "fused_risk_score": env_risk.fused_risk_score,
+            "level": env_risk.risk_level,
+            "severity": env_risk.consequence_severity,
+            "description": env_risk.description,
+            "rust_corrosion_risk": env_risk.rust_corrosion_risk,
+            "seismic_shake_risk": env_risk.seismic_shake_risk,
+            "thermal_ambient_risk": env_risk.thermal_ambient_risk,
+            "dew_point_temp": env_risk.dew_point_temp,
+            "condensation_status": env_risk.condensation_status,
+            "seismic_status": env_risk.seismic_status,
+            "corrosion_rate_category": env_risk.corrosion_rate_category,
+            "mitigation_action": env_risk.mitigation_action
+        },
         "environmental_risk": {
             "fwi": env_risk.fire_weather_index,
             "fused_risk_score": env_risk.fused_risk_score,
