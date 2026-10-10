@@ -460,6 +460,44 @@
                     </div>
                     <span class="asset-tag" id="analyticsUpdated">Waiting for telemetry</span>
                 </div>
+
+                <!-- IEEE C57.91 / IEC 60076-7 Physics-Grounded Degradation Diagnostics -->
+                <div class="ieee-physics-hero-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-primary text-dark font-monospace fw-bold">IEEE C57.91 / IEC 60076-7</span>
+                            <strong class="text-white">Arrhenius Thermal Aging & Solid Insulation (DP) Physics Engine</strong>
+                            <span class="badge bg-dark border border-primary text-info font-monospace small" id="ieeeModelBadge">KINETIC MODEL: ACTIVE</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-dark border border-secondary text-info font-monospace small">F_AA = exp(15000/383.15 - 15000/(Θ_H + 273.15))</span>
+                            <span class="badge bg-dark border border-secondary text-warning font-monospace small">DP = 200 + 800·(THI/100)</span>
+                        </div>
+                    </div>
+                    <div class="ieee-metrics-grid">
+                        <div class="ieee-metric-box">
+                            <div class="ieee-metric-label">Winding Hot-Spot (Θ_H)</div>
+                            <div class="ieee-metric-value text-warning" id="ieeeHotSpot">-- °C</div>
+                            <div class="ieee-metric-sub">T_oil + 18·(I/I_rated)^1.6 gradient</div>
+                        </div>
+                        <div class="ieee-metric-box">
+                            <div class="ieee-metric-label">Aging Factor (F_AA)</div>
+                            <div class="ieee-metric-value text-info" id="ieeeFaa">1.00x</div>
+                            <div class="ieee-metric-sub" id="ieeeFaaDesc">Nominal Rate (1h = 1h consumed)</div>
+                        </div>
+                        <div class="ieee-metric-box">
+                            <div class="ieee-metric-label">Paper Integrity (DP)</div>
+                            <div class="ieee-metric-value text-success" id="ieeeDp">-- <small class="text-muted fs-6">/ 1000</small></div>
+                            <div class="ieee-metric-sub" id="ieeeDpDesc">Fresh Kraft Paper (Tear limit: 200)</div>
+                        </div>
+                        <div class="ieee-metric-box">
+                            <div class="ieee-metric-label">Loss-of-Life Rate</div>
+                            <div class="ieee-metric-value text-primary" id="ieeeLossRate">1.00x</div>
+                            <div class="ieee-metric-sub">Arrhenius consumption multiplier</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="analytics-grid">
                     <section class="analytics-card" aria-labelledby="trendTitle">
                         <div class="analytics-card-heading"><div><h3 id="trendTitle">Temperature & load trend</h3><p>Last 24 readings as a percentage of limit</p></div><span class="chart-unit">% OF LIMIT</span></div>

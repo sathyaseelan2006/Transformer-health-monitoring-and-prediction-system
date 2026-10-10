@@ -231,7 +231,12 @@ def get_telemetry(scenario: Optional[str] = None):
             "s_t": stress.s_t,
             "s_vib": stress.s_vib,
             "thi": stress.thi,
-            "health_status": stress.health_status
+            "health_status": stress.health_status,
+            "hot_spot_temp": stress.hot_spot_temp,
+            "f_aa": stress.f_aa,
+            "dp_estimated": stress.dp_estimated,
+            "loss_of_life_rate": stress.loss_of_life_rate,
+            "physics_model": stress.physics_model
         },
         "environmental": {
             "fwi": env_risk.fire_weather_index,

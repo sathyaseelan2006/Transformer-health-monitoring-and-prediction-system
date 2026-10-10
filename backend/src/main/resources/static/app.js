@@ -97,9 +97,11 @@ function calculateEnvironmentalRisk(tel) {
     const rh = tel.rel_humidity || 50.0;
     const motion = tel.motion_shake || tel.vibration || 0.05;
 
-    // Dew point (Magnus-Tetens formula)
-    const dewPoint = Math.round((amb - ((100.0 - rh) / 5.0)) * 10) / 10;
-    const dewMargin = amb - dewPoint;
+    // Dew point (Magnus-Tetens psychrometric formula: a = 17.27, b = 237.7 °C)
+    const rhClamped = Math.max(0.01, Math.min(100.0, rh));
+    const gamma = (17.27 * amb) / (237.7 + amb) + Math.log(rhClamped / 100.0);
+    const dewPoint = Math.round(((237.7 * gamma) / (17.27 - gamma)) * 10) / 10;
+    const dewMargin = Math.round((amb - dewPoint) * 10) / 10;
     const condFactor = dewMargin <= 2.0 || rh >= 85.0 ? 1.45 : (dewMargin <= 4.0 || rh >= 70.0 ? 1.25 : 1.0);
     const condStatus = dewMargin <= 2.0 || rh >= 85.0 ? "ACTIVE CONDENSATION (HIGH RUST)" : (dewMargin <= 4.0 || rh >= 70.0 ? "ELEVATED DEW RISK" : "DRY / SAFE");
 
@@ -728,6 +730,38 @@ function render(payload) {
         setStress("st", stress.s_t);
         setStress("svib", stress.s_vib);
 
+        // IEEE C57.91 Physics-Grounded Degradation Metrics
+        if ($("ieeeHotSpot")) {
+            const hotSpot = stress.hot_spot_temp !== undefined ? stress.hot_spot_temp : (tel.temperature + 18.0 * Math.pow(tel.current / 10.0, 1.6));
+            $("ieeeHotSpot").textContent = `${fmt(hotSpot, 1)} °C`;
+        }
+        if ($("ieeeFaa")) {
+            const faaVal = stress.f_aa !== undefined ? stress.f_aa : 1.0;
+            $("ieeeFaa").textContent = `${fmt(faaVal, 2)}x`;
+            if ($("ieeeFaaDesc")) {
+                $("ieeeFaaDesc").textContent = faaVal > 2.0 
+                    ? `Severe Aging (${fmt(faaVal, 1)}x Normal Rate)` 
+                    : faaVal > 1.2 
+                        ? `Elevated Wear (${fmt(faaVal, 1)}x Normal Rate)` 
+                        : "Nominal Rate (1h = 1h consumed)";
+            }
+        }
+        if ($("ieeeDp")) {
+            const dpVal = stress.dp_estimated !== undefined ? stress.dp_estimated : (200 + 8.0 * stress.thi);
+            $("ieeeDp").innerHTML = `${fmt(dpVal, 0)} <small class="text-muted fs-6">/ 1000</small>`;
+            if ($("ieeeDpDesc")) {
+                $("ieeeDpDesc").textContent = dpVal > 700 
+                    ? "Normal Kraft Paper (Optimal)" 
+                    : dpVal > 400 
+                        ? "Moderate Degradation (Watchload)" 
+                        : "Critical Brittleness (Tear Risk ≤ 200)";
+            }
+        }
+        if ($("ieeeLossRate")) {
+            const rateVal = stress.loss_of_life_rate !== undefined ? stress.loss_of_life_rate : (stress.f_aa || 1.0);
+            $("ieeeLossRate").textContent = `${fmt(rateVal, 2)}x`;
+        }
+
         if ($("voltageValue")) $("voltageValue").textContent = `${fmt(tel.voltage, 1)} V`;
         if ($("currentValue")) $("currentValue").textContent = `${fmt(tel.current, 1)} A`;
         if ($("temperatureValue")) $("temperatureValue").textContent = `${fmt(tel.temperature, 1)} C`;
@@ -799,7 +833,14 @@ function renderEnvironmentalRiskFusion(env, tel) {
     const motion = tel.motion_shake !== undefined ? tel.motion_shake : (tel.vibration || 0.05);
 
     if ($("envAmbientTemp")) $("envAmbientTemp").textContent = `${fmt(amb, 1)} °C`;
-    if ($("envDewPoint")) $("envDewPoint").textContent = `${fmt(env.dew_point_temp || (amb - (100 - rh)/5), 1)} °C`;
+    if ($("envDewPoint")) {
+        const calcDew = () => {
+            const g = (17.27 * amb) / (237.7 + amb) + Math.log(Math.max(0.01, rh) / 100.0);
+            return (237.7 * g) / (17.27 - g);
+        };
+        const dp = env.dew_point_temp !== undefined ? env.dew_point_temp : calcDew();
+        $("envDewPoint").textContent = `${fmt(dp, 1)} °C`;
+    }
     if ($("envRelHumidity")) $("envRelHumidity").textContent = `${fmt(rh, 0)} %`;
     
     if ($("envCondensationBadge")) {

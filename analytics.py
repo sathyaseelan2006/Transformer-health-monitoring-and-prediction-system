@@ -2,6 +2,7 @@
 Analytics and Mathematical Engine for Transformer Health & Risk Assessment
 Implements equations (1) - (7) and Environmental Risk Fusion from the paper.
 """
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, Tuple, List
@@ -9,12 +10,19 @@ from config import CONFIG, TransformerConfig
 
 @dataclass
 class StressIndicators:
-    s_v: float       # Voltage stress
-    s_i: float       # Current stress
-    s_t: float       # Thermal stress
-    s_vib: float     # Vibration stress
+    s_v: float       # Voltage stress (0.0 - 1.0)
+    s_i: float       # Current overload stress (0.0 - 1.0)
+    s_t: float       # Thermal stress (0.0 - 1.0)
+    s_vib: float     # Vibration stress (0.0 - 1.0)
     thi: float       # Transformer Health Index (0-100)
-    health_status: str # "GOOD", "DEGRADED", "WARNING", "CRITICAL"
+    health_status: str # "OPTIMAL / GOOD", "MODERATE / ACCEPTABLE", "WARNING / DEGRADED", "CRITICAL / SEVERE RISK"
+
+    # Physics-Grounded IEEE C57.91 / IEC 60076-7 Degradation Parameters
+    hot_spot_temp: float = 30.0         # °C Winding Hot-Spot Temperature (Theta_H)
+    f_aa: float = 1.0                  # IEEE C57.91 Aging Acceleration Factor (Arrhenius: 1.0 at 110°C)
+    dp_estimated: float = 1000.0       # Cellulose Degree of Polymerization (200=brittle paper failure, 1000=new)
+    loss_of_life_rate: float = 1.0     # Relative aging consumption rate multiplier (1.0 = normal consumption)
+    physics_model: str = "IEEE C57.91 Arrhenius Kinetics"
 
 @dataclass
 class EnvironmentalRisk:
@@ -58,12 +66,13 @@ class TransformerAnalytics:
         vib_real: float
     ) -> StressIndicators:
         """
-        Computes normalized stress indicators and THI via equations (1) - (4).
+        Computes IEEE C57.91 physics-grounded stress indicators, Arrhenius aging acceleration factor,
+        cellulose insulation Degree of Polymerization (DP), and composite THI.
         """
-        # Eq (1): Voltage stress (normalized 0.0 - 1.0)
+        # Eq (1): Voltage deviation stress (normalized 0.0 - 1.0)
         s_v = min(1.0, max(0.0, abs(v_real - self.config.V_NOMINAL) / self.config.V_NOMINAL))
         
-        # Eq (1): Current stress (normalized 0.0 - 1.0)
+        # Eq (1): Current overload stress (normalized 0.0 - 1.0, proportional to I^2 loss profile)
         s_i = min(1.0, max(0.0, abs(i_real - self.config.I_NOMINAL) / self.config.I_NOMINAL))
         
         # Eq (2): Thermal stress (0 if below nominal, normalized 0.0 - 1.0)
@@ -72,7 +81,20 @@ class TransformerAnalytics:
         # Eq (3): Vibration stress (0 if below nominal, normalized 0.0 - 1.0)
         s_vib = min(1.0, max(0.0, (vib_real - self.config.VIB_NOMINAL) / (self.config.VIB_MAX - self.config.VIB_NOMINAL)))
         
-        # Eq (4): Transformer Health Index (0-100 scale)
+        # --- IEEE C57.91 / IEC 60076-7 Winding Hot-Spot & Arrhenius Degradation Physics ---
+        # 1. Winding Hottest-Spot Temperature Theta_H = T_oil + Delta_Theta_H_rated * (I / I_rated)^1.6
+        load_ratio = max(0.0, i_real / max(1e-3, self.config.I_NOMINAL))
+        rated_gradient = 18.0  # °C rated winding-to-top-oil gradient for distribution transformers
+        hot_spot_grad = rated_gradient * (load_ratio ** 1.6) if load_ratio > 0.05 else 0.0
+        hot_spot_temp = round(t_real + hot_spot_grad, 1)
+
+        # 2. IEEE C57.91 Aging Acceleration Factor F_AA = exp(15000/383.15 - 15000/(Theta_H + 273.15))
+        # Reference temperature = 110 °C (383.15 K). Doubles every ~6°C (Montsinger's Rule)
+        theta_clamped = max(-20.0, min(240.0, hot_spot_temp))
+        arrhenius_exponent = (15000.0 / 383.15) - (15000.0 / (theta_clamped + 273.15))
+        f_aa = round(math.exp(arrhenius_exponent), 3)
+
+        # Eq (4): Baseline Weighted Multi-Factor Stress
         weighted_stress = (
             self.config.W1 * s_v +
             self.config.W2 * s_i +
@@ -80,8 +102,16 @@ class TransformerAnalytics:
             self.config.W4 * s_vib
         )
         
-        raw_thi = 100.0 - (weighted_stress * 100.0)
+        # If thermal aging accelerates severely (F_AA > 1.2), apply Arrhenius non-linear penalty
+        arrhenius_penalty = min(0.25, max(0.0, (f_aa - 1.0) * 0.035)) if f_aa > 1.0 else 0.0
+        effective_stress = min(1.0, weighted_stress + arrhenius_penalty)
+
+        raw_thi = 100.0 - (effective_stress * 100.0)
         thi = max(0.0, min(100.0, round(raw_thi, 2)))
+
+        # 3. Solid Cellulose Insulation Degree of Polymerization (DP):
+        # Fresh Kraft paper: DP = 1000 - 1200; End-of-life mechanical tear limit: DP <= 200
+        dp_est = round(200.0 + 800.0 * (thi / 100.0), 1)
 
         if thi >= 85.0:
             status = "OPTIMAL / GOOD"
@@ -98,7 +128,12 @@ class TransformerAnalytics:
             s_t=round(s_t, 4),
             s_vib=round(s_vib, 4),
             thi=thi,
-            health_status=status
+            health_status=status,
+            hot_spot_temp=hot_spot_temp,
+            f_aa=f_aa,
+            dp_estimated=dp_est,
+            loss_of_life_rate=round(f_aa, 2),
+            physics_model="IEEE C57.91 Arrhenius Kinetics"
         )
 
     def calculate_rul_and_next_service(
@@ -161,9 +196,11 @@ class TransformerAnalytics:
           3. Thermal Ambient Degradation Stress
           4. Fused Composite Environmental Risk (0-100%)
         """
-        # A. Dew Point & Condensation Calculation (Magnus-Tetens formula)
-        dew_point = round(ambient_temp - ((100.0 - rel_humidity) / 5.0), 1)
-        dew_margin = ambient_temp - dew_point
+        # A. Dew Point & Condensation Calculation (Magnus-Tetens Psychrometric formula: a = 17.27, b = 237.7 °C)
+        rh_clamped = max(0.01, min(100.0, rel_humidity))
+        gamma = (17.27 * ambient_temp) / (237.7 + ambient_temp) + math.log(rh_clamped / 100.0)
+        dew_point = round((237.7 * gamma) / (17.27 - gamma), 1)
+        dew_margin = round(ambient_temp - dew_point, 1)
 
         if dew_margin <= 2.0 or rel_humidity >= 85.0:
             condensation_status = "ACTIVE CONDENSATION (HIGH RUST HAZARD)"
@@ -211,9 +248,9 @@ class TransformerAnalytics:
         fused_score = round(0.45 * rust_risk + 0.40 * seismic_risk + 0.15 * thermal_risk, 1)
 
         # Classification & Actionable Mitigation Advice
-        if fused_score >= 75.0 or seismic_risk >= 80.0 or rust_risk >= 85.0:
+        if fused_score >= 75.0 or seismic_risk >= 80.0 or rust_risk >= 85.0 or (wind_speed >= 35.0 and rel_humidity <= 15.0):
             risk_level = "EXTREME"
-            severity = "SEVERE DAMAGE HAZARD"
+            severity = "WILDFIRE DISASTER RISK" if (wind_speed >= 30.0 and rel_humidity <= 20.0) else "SEVERE DAMAGE HAZARD"
             desc = f"Severe multi-factor risk: {seismic_status.lower()} and {corrosion_cat.lower()}."
             action = "Dispatch immediate emergency inspection: check anchor bolts, radiator fin oxidation, and foundation dampeners."
         elif fused_score >= 50.0:
@@ -221,7 +258,7 @@ class TransformerAnalytics:
             severity = "ELEVATED HAZARD"
             desc = f"High environmental stress: {seismic_status.lower()}, rust potential {rust_risk}%."
             action = "Schedule preventative tank recoating, verify anti-vibration mountings, and inspect enclosure seals."
-        elif fused_score >= 25.0:
+        elif fused_score >= 38.0:
             risk_level = "MODERATE"
             severity = "MODERATE EXPOSURE"
             desc = f"Moderate ambient exposure: {corrosion_cat.lower()}, stable foundation."
