@@ -810,73 +810,127 @@ function renderEnvironmentalRiskFusion(env, tel) {
     const score = env.fused_risk_score !== undefined ? env.fused_risk_score : (env.fwi || 0);
     const level = env.level || "LOW";
 
-    // Overall Fused Score & Dial
+    // 1. Overall Fused Score & Dial
     if ($("envFusedScore")) $("envFusedScore").textContent = fmt(score, 1);
     if ($("riskLevel")) {
         $("riskLevel").textContent = `${level} RISK`;
         $("riskLevel").className = `risk-pill ${level.toLowerCase()}`;
     }
     if ($("envConsequenceSeverity")) $("envConsequenceSeverity").textContent = env.severity || "CONTAINED / OPTIMAL";
-    if ($("envKineticsBadge")) $("envKineticsBadge").textContent = env.corrosion_rate_category || "ISO 9223 Class: C1 Passivated";
+    
+    // Corrosion ISO classification badge
+    if ($("envKineticsBadge")) {
+        const cat = env.corrosion_rate_category || "ISO 9223: C1 Passivated";
+        $("envKineticsBadge").textContent = cat;
+        $("envKineticsBadge").className = `env-micro-pill ${score > 70 ? 'danger' : score > 40 ? 'warning' : 'safe'}`;
+    }
 
     const dial = $("envDialFill");
     if (dial) {
         const circumference = 402.12; // 2 * PI * 64
         const offset = circumference - (circumference * clamp(score, 0, 100) / 100);
         dial.style.strokeDashoffset = offset;
-        dial.style.stroke = level === "EXTREME" ? "var(--red)" : level === "HIGH" ? "var(--amber)" : level === "MODERATE" ? "var(--cyan)" : "var(--green)";
+        dial.style.stroke = level === "EXTREME" ? "#ef4444" : level === "HIGH" ? "#f59e0b" : level === "MODERATE" ? "#06b6d4" : "#10b981";
     }
 
-    // Physical Sensor Trio (Prototype Inputs)
+    // 2. Physical Sensor Trio (Prototype Telemetry Inputs)
     const amb = tel.ambient_temp !== undefined ? tel.ambient_temp : 28.0;
     const rh = tel.rel_humidity !== undefined ? tel.rel_humidity : 50.0;
     const motion = tel.motion_shake !== undefined ? tel.motion_shake : (tel.vibration || 0.05);
 
+    // Sensor 1: Temperature & Dew Point
     if ($("envAmbientTemp")) $("envAmbientTemp").textContent = `${fmt(amb, 1)} °C`;
-    if ($("envDewPoint")) {
-        const calcDew = () => {
-            const g = (17.27 * amb) / (237.7 + amb) + Math.log(Math.max(0.01, rh) / 100.0);
-            return (237.7 * g) / (17.27 - g);
-        };
-        const dp = env.dew_point_temp !== undefined ? env.dew_point_temp : calcDew();
-        $("envDewPoint").textContent = `${fmt(dp, 1)} °C`;
+    const calcDew = () => {
+        const g = (17.27 * amb) / (237.7 + amb) + Math.log(Math.max(0.01, rh) / 100.0);
+        return (237.7 * g) / (17.27 - g);
+    };
+    const dp = env.dew_point_temp !== undefined ? env.dew_point_temp : calcDew();
+    const dewMargin = amb - dp;
+    if ($("envDewPoint")) $("envDewPoint").textContent = `${fmt(dp, 1)} °C`;
+    if ($("envDewMarginBadge")) {
+        const isHazard = dewMargin <= 2.0 || rh >= 85.0;
+        const isWarning = dewMargin <= 4.5 || rh >= 70.0;
+        $("envDewMarginBadge").textContent = `ΔT ${fmt(dewMargin, 1)} °C (${isHazard ? 'Dew Point Hazard' : isWarning ? 'Elevated Dew' : 'Safe Margin'})`;
+        $("envDewMarginBadge").className = `env-micro-pill ${isHazard ? 'danger' : isWarning ? 'warning' : 'safe'}`;
     }
+
+    // Sensor 2: Relative Humidity & Condensation Status
     if ($("envRelHumidity")) $("envRelHumidity").textContent = `${fmt(rh, 0)} %`;
-    
     if ($("envCondensationBadge")) {
-        $("envCondensationBadge").textContent = env.condensation_status || (rh > 75 ? "ACTIVE CONDENSATION" : "DRY / SAFE");
-        $("envCondensationBadge").className = `badge bg-dark border ${rh > 75 ? "text-danger border-danger" : rh > 60 ? "text-warning border-warning" : "text-success border-success"}`;
+        const isCondensing = rh >= 85.0 || dewMargin <= 2.0;
+        const isMoisture = rh >= 70.0 || dewMargin <= 4.0;
+        $("envCondensationBadge").textContent = env.condensation_status || (isCondensing ? "ACTIVE CONDENSATION" : isMoisture ? "SURFACE MOISTURE" : "DRY / SAFE");
+        $("envCondensationBadge").className = `env-micro-pill ${isCondensing ? 'danger' : isMoisture ? 'warning' : 'safe'}`;
+    }
+    if ($("envCorrosionFactor")) {
+        const kFactor = (rh >= 85.0 || dewMargin <= 2.0) ? "1.45× Accelerated Rate" : (rh >= 70.0) ? "1.25× Elevated Rate" : "1.0× Normal Rate";
+        $("envCorrosionFactor").textContent = kFactor;
+        $("envCorrosionFactor").className = `env-micro-pill ${(rh >= 85.0 || dewMargin <= 2.0) ? 'danger' : (rh >= 70.0) ? 'warning' : 'safe'}`;
     }
 
+    // Sensor 3: Motion & Earthquake Shake Sensor
     if ($("envMotionShake")) $("envMotionShake").textContent = `${fmt(motion, 3)} g`;
+    const motionCard = $("envMotionBox");
+    if (motionCard) {
+        if (motion >= 0.20) {
+            motionCard.classList.add("seismic-alert-pulse");
+        } else {
+            motionCard.classList.remove("seismic-alert-pulse");
+        }
+    }
     if ($("envSeismicBadge")) {
-        $("envSeismicBadge").textContent = env.seismic_status || (motion > 0.4 ? "SEISMIC TREMOR" : "QUIET / STABLE");
-        $("envSeismicBadge").className = `badge bg-dark border ${motion > 0.4 ? "text-danger border-danger" : motion > 0.15 ? "text-warning border-warning" : "text-info border-info"}`;
+        const isCritSeismic = motion >= 0.45;
+        const isTremor = motion >= 0.18;
+        $("envSeismicBadge").textContent = env.seismic_status || (isCritSeismic ? "SEISMIC SHOCK" : isTremor ? "EARTH TREMOR" : "QUIET / STABLE");
+        $("envSeismicBadge").className = `env-micro-pill ${isCritSeismic ? 'danger' : isTremor ? 'warning' : 'safe'}`;
+    }
+    if ($("envRichterBadge")) {
+        const richterText = motion >= 0.45 ? "Richter ≥ M5.0 (Strong Ground Quake)" :
+                            motion >= 0.20 ? "Richter M3.5-4.5 (Moderate Tremor)" :
+                            motion >= 0.08 ? "Richter M2.0-3.0 (Minor Vibration)" :
+                            "Richter < M2.0 (Micro Tremor)";
+        const richterClass = motion >= 0.45 ? "danger" : motion >= 0.20 ? "warning" : motion >= 0.08 ? "info" : "purple";
+        $("envRichterBadge").textContent = richterText;
+        $("envRichterBadge").className = `env-micro-pill ${richterClass}`;
+    }
+    if ($("envSeismicScaleBadge")) {
+        const seismicRating = motion >= 0.45 ? "Seismic: Strong Quake (M≥5.0)" :
+                              motion >= 0.20 ? "Seismic: Tremor (M3.5)" :
+                              motion >= 0.08 ? "Seismic: Mild Shake" : "Seismic: Stable Foundation";
+        $("envSeismicScaleBadge").textContent = seismicRating;
+        $("envSeismicScaleBadge").className = `env-micro-pill ${motion >= 0.45 ? 'danger' : motion >= 0.20 ? 'warning' : 'info'}`;
     }
 
-    // Risk Bars Breakdown
+    // 3. Risk Breakdown Bars
     const rustPct = env.rust_corrosion_risk !== undefined ? env.rust_corrosion_risk : (clamp((rh - 40)/50, 0, 1)*70 + clamp((amb-10)/35, 0, 1)*30);
     const seismicPct = env.seismic_shake_risk !== undefined ? env.seismic_shake_risk : clamp((motion/0.50)*100, 0, 100);
     const thermalPct = env.thermal_ambient_risk !== undefined ? env.thermal_ambient_risk : clamp((amb - 25)/25 * 100, 0, 100);
 
     if ($("rustRiskPercent")) $("rustRiskPercent").textContent = `${fmt(rustPct, 1)}%`;
     if ($("rustRiskBar")) $("rustRiskBar").style.width = `${clamp(rustPct, 0, 100)}%`;
-    if ($("rustKineticsNote")) $("rustKineticsNote").textContent = env.corrosion_rate_category || "Atmospheric condensation & iron oxidation kinetics";
+    if ($("rustKineticsNote")) $("rustKineticsNote").textContent = env.corrosion_rate_category || "ISO 9223 Oxidation Kinetics";
 
     if ($("seismicRiskPercent")) $("seismicRiskPercent").textContent = `${fmt(seismicPct, 1)}%`;
     if ($("seismicRiskBar")) $("seismicRiskBar").style.width = `${clamp(seismicPct, 0, 100)}%`;
-    if ($("seismicKineticsNote")) $("seismicKineticsNote").textContent = env.seismic_status || "Foundation displacement & mechanical tremor resonance";
+    if ($("seismicKineticsNote")) $("seismicKineticsNote").textContent = env.seismic_status || "Tremor Displacement";
 
     if ($("thermalRiskPercent")) $("thermalRiskPercent").textContent = `${fmt(thermalPct, 1)}%`;
     if ($("thermalRiskBar")) $("thermalRiskBar").style.width = `${clamp(thermalPct, 0, 100)}%`;
 
-    // Actionable advisory description
+    // 4. Update Live Kinetics Legend Metric Readouts
+    if ($("legendRustVal")) $("legendRustVal").textContent = `${fmt(rustPct, 1)}%`;
+    if ($("legendSeismicVal")) $("legendSeismicVal").textContent = `${fmt(seismicPct, 1)}%`;
+    if ($("legendRhVal")) $("legendRhVal").textContent = `${fmt(rh, 0)}%`;
+    if ($("legendTempVal")) $("legendTempVal").textContent = `${fmt(amb, 1)}°C`;
+
+    // 5. Actionable Advisory Description (SCADA Mission Dispatch)
     if ($("envActionTitle")) $("envActionTitle").textContent = env.severity || "Preventative Baseline";
     if ($("riskDescription")) {
-        $("riskDescription").textContent = `${env.description || ""} ${env.mitigation_action ? "• " + env.mitigation_action : ""}`;
+        const fullDesc = `${env.description || "Environmental parameters optimal."} ${env.mitigation_action ? "• Recommended: " + env.mitigation_action : ""}`;
+        $("riskDescription").textContent = fullDesc;
     }
 
-    // Update Live Environmental Kinetics SVG Trend Graph
+    // 6. Update Live Environmental Kinetics SVG Trend Graph
     updateEnvTrendGraph(rustPct, seismicPct, rh, amb);
 }
 
@@ -1198,6 +1252,44 @@ if ($("topScenarioBtn")) {
 if ($("triggerAiDiagBtn")) $("triggerAiDiagBtn").addEventListener("click", runAiDiagnostics);
 if ($("cardDiagnoseBtn")) $("cardDiagnoseBtn").addEventListener("click", runAiDiagnostics);
 if ($("diagReRunBtn")) $("diagReRunBtn").addEventListener("click", runAiDiagnostics);
+
+// Quick Environmental Threat Scenario Preset buttons
+const envPresetBtns = document.querySelectorAll(".env-preset-btn");
+envPresetBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+        envPresetBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const scenario = btn.getAttribute("data-scenario") || "NORMAL";
+        fetch("/api/scenario", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scenario: scenario })
+        }).then(() => tick()).catch(() => tick());
+    });
+});
+
+// Copy Site Advisory to Clipboard
+const copyAdvBtn = $("copyEnvAdvisoryBtn");
+if (copyAdvBtn) {
+    copyAdvBtn.addEventListener("click", async () => {
+        const title = $("envActionTitle") ? $("envActionTitle").textContent : "Site Advisory";
+        const desc = $("riskDescription") ? $("riskDescription").textContent : "";
+        const textToCopy = `[GridGuard SCADA Advisory]\nSeverity: ${title}\nDirectives: ${desc}\nTimestamp: ${new Date().toISOString()}`;
+        try {
+            await navigator.clipboard.writeText(textToCopy);
+            copyAdvBtn.classList.remove("btn-outline-warning");
+            copyAdvBtn.classList.add("btn-success");
+            copyAdvBtn.innerHTML = `<span>✓</span> Copied to Clipboard!`;
+            setTimeout(() => {
+                copyAdvBtn.classList.remove("btn-success");
+                copyAdvBtn.classList.add("btn-outline-warning");
+                copyAdvBtn.innerHTML = `<span id="copyBtnIcon">📋</span> Copy Site Advisory`;
+            }, 2200);
+        } catch(err) {
+            console.error("Failed to copy advisory:", err);
+        }
+    });
+}
 
 // Alert Filter buttons
 const filterBtns = document.querySelectorAll("#alertFilterGroup button");

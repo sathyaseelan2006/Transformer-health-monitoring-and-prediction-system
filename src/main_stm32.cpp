@@ -68,7 +68,8 @@ void sendTelemetryJson();
 
 /* ------------ SETUP ------------ */
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600);    // USB CDC (PC serial debug)
+  Serial1.begin(9600);   // Hardware USART1: PA9 (TX) -> ESP32 RX (GPIO16), PA10 (RX)
   analogReadResolution(12);
 
   pinMode(RELAY, OUTPUT);
@@ -316,27 +317,24 @@ void resetSystem() {
   }
 }
 
-/* ------------ USB / LORA SERIAL TELEMETRY JSON ------------ */
+/* ------------ USB / HARDWARE UART TELEMETRY JSON ------------ */
 void sendTelemetryJson() {
-  Serial.print("{\"deviceId\":\"STM32-TX01\",\"voltage\":");
-  Serial.print(voltage, 2);
-  Serial.print(",\"current\":");
-  Serial.print(current, 2);
-  Serial.print(",\"temperature\":");
-  Serial.print(temperature, 2);
-  Serial.print(",\"vibration\":");
-  Serial.print(vibration, 3);
-  Serial.print(",\"oilLevel\":\"");
-  Serial.print(oilState == LOW ? "LOW" : "NORMAL");
-  Serial.print("\",\"ambientTemp\":28.0,\"relativeHumidity\":45.0,\"windSpeed\":12.0,\"edgeTHI\":");
-  Serial.print(healthIndex, 2);
-  Serial.print(",\"buzzer\":");
-  Serial.print(buzzerActive ? "true" : "false");
-  Serial.print(",\"danger\":");
-  Serial.print(dangerActive ? "true" : "false");
-  Serial.print(",\"relayStatus\":\"");
-  Serial.print(isRelayTripped ? "OPEN (TRIPPED)" : "CLOSED (ENERGIZED)");
-  Serial.print("\",\"tripReason\":\"");
-  Serial.print(activeTripReason);
-  Serial.println("\"}");
+  String json = "{\"deviceId\":\"STM32-TX01\"";
+  json += ",\"voltage\":" + String(voltage, 2);
+  json += ",\"current\":" + String(current, 2);
+  json += ",\"temperature\":" + String(temperature, 2);
+  json += ",\"vibration\":" + String(vibration, 3);
+  json += ",\"oilLevel\":\"" + String(oilState == LOW ? "LOW" : "NORMAL") + "\"";
+  json += ",\"ambientTemp\":28.0,\"relativeHumidity\":45.0,\"windSpeed\":12.0";
+  json += ",\"edgeTHI\":" + String(healthIndex, 2);
+  json += ",\"buzzer\":" + String(buzzerActive ? "true" : "false");
+  json += ",\"danger\":" + String(dangerActive ? "true" : "false");
+  json += ",\"relayStatus\":\"" + String(isRelayTripped ? "OPEN (TRIPPED)" : "CLOSED (ENERGIZED)") + "\"";
+  json += ",\"tripReason\":\"" + activeTripReason + "\"}";
+
+  // Transmit to ESP32 Gateway via Hardware USART1 (Pin PA9)
+  Serial1.println(json);
+
+  // Echo to USB CDC for local PC monitor debugging
+  Serial.println(json);
 }

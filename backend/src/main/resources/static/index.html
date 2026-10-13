@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261008-final">
+    <link rel="stylesheet" href="style.css?v=20261012-chart-refresh">
     <script type="module" src="https://unpkg.com/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
 </head>
 <body>
@@ -520,13 +520,35 @@
                 <article class="panel risk-panel env-fusion-card" id="module-risk">
                     <div class="panel-head">
                         <div>
-                            <p class="panel-kicker"><span class="badge bg-warning text-dark me-2">MODULE 03</span>Multi-Sensor Environmental Risk Fusion</p>
-                            <h2>Environmental Threat, Rust & Seismic Shake Fusion</h2>
-                            <p class="text-muted small mb-0 font-sans">Real-time fusion of Prototype Sensors: <strong>Temperature</strong>, <strong>Humidity</strong>, and <strong>Motion/Earthquake Tremor</strong></p>
+                            <p class="panel-kicker"><span class="badge bg-warning text-dark me-2">MODULE 03</span>Environmental intelligence</p>
+                            <h2>Environmental conditions</h2>
+                            <p class="env-intro">Live exposure monitoring for this transformer site. Review the score, sensor readings, and trend before taking action.</p>
                         </div>
                         <div class="d-flex flex-column align-items-end gap-1">
                             <span class="risk-pill" id="riskLevel">LOW RISK</span>
-                            <span class="badge bg-dark border border-secondary text-info font-monospace small" id="envFormulaBadge">ERF = 0.45·Rust + 0.40·Seismic + 0.15·Thermal</span>
+                            <span class="badge bg-dark border border-secondary text-info font-monospace small" id="envFormulaBadge" title="Multi-Sensor Fusion Formula">ERF = 0.45·Rust + 0.40·Seismic + 0.15·Thermal</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Quick Threat Scenario Simulation Bar -->
+                    <div class="env-scenario-toolbar">
+                        <div class="env-toolbar-label">
+                            <span class="env-pulse-led"></span>
+                            <span>Test a site condition</span>
+                        </div>
+                        <div class="env-preset-group">
+                            <button class="env-preset-btn active" id="btnPresetNormal" data-scenario="NORMAL" type="button">
+                                <span>●</span> Nominal
+                            </button>
+                            <button class="env-preset-btn" id="btnPresetRust" data-scenario="HIGH_HUMIDITY_RUST_RISK" type="button">
+                                <span>●</span> Rust surge
+                            </button>
+                            <button class="env-preset-btn" id="btnPresetSeismic" data-scenario="EARTHQUAKE_SEISMIC_SHAKE" type="button">
+                                <span>●</span> Seismic event
+                            </button>
+                            <button class="env-preset-btn" id="btnPresetWildfire" data-scenario="WILDFIRE_ENVIRONMENTAL_HAZARD" type="button">
+                                <span>●</span> Heatwave
+                            </button>
                         </div>
                     </div>
 
@@ -535,114 +557,157 @@
                         <div class="env-score-gauge">
                             <div class="env-dial-wrap">
                                 <svg viewBox="0 0 160 160" class="env-dial-svg">
+                                    <circle class="env-dial-ticks" cx="80" cy="80" r="70"></circle>
                                     <circle class="env-dial-track" cx="80" cy="80" r="64"></circle>
                                     <circle class="env-dial-fill" id="envDialFill" cx="80" cy="80" r="64"></circle>
                                 </svg>
                                 <div class="env-dial-center">
                                     <span id="envFusedScore" class="env-score-num">--</span>
-                                    <small class="env-score-unit">% ERF</small>
+                                    <small class="env-score-unit">% ERF INDEX</small>
                                 </div>
                             </div>
                             <div class="env-dial-meta">
                                 <span class="text-white fw-bold" id="envConsequenceSeverity">CONTAINED / OPTIMAL</span>
-                                <small class="text-muted font-monospace" id="envKineticsBadge">ISO 9223 Class: C1 Passivated</small>
+                                <span class="env-micro-pill safe" id="envKineticsBadge">ISO 9223: C1 Passivated</span>
+                                <span class="env-micro-pill info" id="envSeismicScaleBadge">Seismic: Quiet</span>
                             </div>
                         </div>
 
                         <!-- 3 Physical Prototype Sensor Live Stream Widgets -->
                         <div class="env-sensor-trio">
                             <!-- Sensor 1: Temperature Sensor -->
-                            <div class="env-sensor-box temp-box">
-                                <div class="sensor-icon-title">
-                                    <span class="sensor-icon">🌡️</span>
-                                    <div>
-                                        <span class="sensor-name">Ambient Temp</span>
-                                        <small class="text-muted font-monospace">DHT11 / LM35</small>
+                            <div class="env-sensor-box temp-box" id="envTempBox">
+                                <div>
+                                    <div class="sensor-icon-title">
+                                        <span class="sensor-icon">🌡️</span>
+                                        <div>
+                                            <span class="sensor-name">Ambient Temp</span>
+                                            <span class="sensor-model-tag">DHT11 / LM35 Sensor</span>
+                                        </div>
                                     </div>
+                                    <strong class="sensor-val text-warning" id="envAmbientTemp">-- °C</strong>
                                 </div>
-                                <strong class="sensor-val" id="envAmbientTemp">-- °C</strong>
-                                <div class="sensor-sub-metric">
-                                    <span>Dew Point:</span>
-                                    <strong id="envDewPoint">-- °C</strong>
+                                <div class="sensor-sub-metrics-group">
+                                    <div class="sensor-sub-metric">
+                                        <span>Dew Point Temp:</span>
+                                        <strong id="envDewPoint" class="text-white font-monospace">-- °C</strong>
+                                    </div>
+                                    <div class="sensor-sub-metric">
+                                        <span>Safety Margin:</span>
+                                        <span id="envDewMarginBadge" class="env-micro-pill safe">ΔT +10.5 °C (Safe)</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Sensor 2: Humidity Sensor -->
-                            <div class="env-sensor-box humidity-box">
-                                <div class="sensor-icon-title">
-                                    <span class="sensor-icon">💧</span>
-                                    <div>
-                                        <span class="sensor-name">Rel Humidity</span>
-                                        <small class="text-muted font-monospace">RH Hygrometer</small>
+                            <div class="env-sensor-box humidity-box" id="envHumidityBox">
+                                <div>
+                                    <div class="sensor-icon-title">
+                                        <span class="sensor-icon">💧</span>
+                                        <div>
+                                            <span class="sensor-name">Relative Humidity</span>
+                                            <span class="sensor-model-tag">RH Hygrometer Sensor</span>
+                                        </div>
                                     </div>
+                                    <strong class="sensor-val text-info" id="envRelHumidity">-- %</strong>
                                 </div>
-                                <strong class="sensor-val" id="envRelHumidity">-- %</strong>
-                                <div class="sensor-sub-metric">
-                                    <span id="envCondensationBadge" class="badge bg-dark border text-success">DRY / SAFE</span>
+                                <div class="sensor-sub-metrics-group">
+                                    <div class="sensor-sub-metric">
+                                        <span>Moisture State:</span>
+                                        <span id="envCondensationBadge" class="env-micro-pill safe">DRY / SAFE</span>
+                                    </div>
+                                    <div class="sensor-sub-metric">
+                                        <span>Corrosion Accel:</span>
+                                        <span id="envCorrosionFactor" class="env-micro-pill info">1.0× Normal Rate</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Sensor 3: Motion / Shake / Earthquake Sensor -->
-                            <div class="env-sensor-box motion-box">
-                                <div class="sensor-icon-title">
-                                    <span class="sensor-icon">📳</span>
-                                    <div>
-                                        <span class="sensor-name">Motion & Shake</span>
-                                        <small class="text-muted font-monospace">SW-420 / MPU6050</small>
+                            <div class="env-sensor-box motion-box" id="envMotionBox">
+                                <div>
+                                    <div class="sensor-icon-title">
+                                        <span class="sensor-icon">📳</span>
+                                        <div>
+                                            <span class="sensor-name">Motion & Seismic Shake</span>
+                                            <span class="sensor-model-tag">SW-420 / MPU6050 Accelerometer</span>
+                                        </div>
                                     </div>
+                                    <strong class="sensor-val text-danger" id="envMotionShake">-- g</strong>
                                 </div>
-                                <strong class="sensor-val" id="envMotionShake">-- g</strong>
-                                <div class="sensor-sub-metric">
-                                    <span id="envSeismicBadge" class="badge bg-dark border text-info">QUIET / STABLE</span>
+                                <div class="sensor-sub-metrics-group">
+                                    <div class="sensor-sub-metric">
+                                        <span>Foundation Tremor:</span>
+                                        <span id="envSeismicBadge" class="env-micro-pill safe">QUIET / STABLE</span>
+                                    </div>
+                                    <div class="sensor-sub-metric">
+                                        <span>Richter Rating:</span>
+                                        <span id="envRichterBadge" class="env-micro-pill purple">Richter &lt; M2.0 (Micro)</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Computed Damage Breakdown Risk Bars (Calculated directly from Prototype Sensors) -->
+                    <!-- Computed Damage Breakdown Risk Bars (Directly Calculated from Physical Prototype Telemetry) -->
                     <div class="env-breakdown-grid mt-3">
                         <!-- Bar A: Rust & Corrosion Possibility (Temp + Humidity) -->
                         <div class="risk-bar-card">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small text-light fw-bold">🟤 Rust & Corrosion Possibility</span>
-                                <strong class="font-monospace text-warning small" id="rustRiskPercent">--%</strong>
+                            <div class="risk-bar-header">
+                                <span class="risk-bar-title">🟤 Rust & Atmospheric Corrosion</span>
+                                <strong class="risk-bar-score text-warning" id="rustRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
+                                <span class="risk-track-threshold-30" title="Safe Limit: 30%"></span>
+                                <span class="risk-track-threshold-70" title="High Risk: 70%"></span>
                                 <div class="risk-fill-bar bar-rust" id="rustRiskBar" style="width: 0%;"></div>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                <small class="text-warning font-monospace" style="font-size: 0.65rem;">Source: Temp + Humidity Sensors</small>
-                                <small class="text-muted font-monospace" style="font-size: 0.65rem;" id="rustKineticsNote">ISO 9223 Oxidation Rate</small>
+                            <div class="risk-bar-meta">
+                                <span class="risk-bar-source text-warning">Source: Temp + Humidity Telemetry</span>
+                                <span class="text-slate-400 font-monospace" style="font-size: 0.68rem;" id="rustKineticsNote">ISO 9223 Oxidation Rate</span>
+                            </div>
+                            <div class="risk-bar-impact">
+                                🎯 <strong>Vulnerable:</strong> Tank cooling radiator fins, pipe joints & bushing seals
                             </div>
                         </div>
 
                         <!-- Bar B: Seismic & Ground Shake Damage (Motion Sensor) -->
                         <div class="risk-bar-card">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small text-light fw-bold">⚡ Earthquake & Shake Damage</span>
-                                <strong class="font-monospace text-danger small" id="seismicRiskPercent">--%</strong>
+                            <div class="risk-bar-header">
+                                <span class="risk-bar-title">⚡ Earthquake & Ground Tremor Shake</span>
+                                <strong class="risk-bar-score text-danger" id="seismicRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
+                                <span class="risk-track-threshold-30" title="Safe Limit: 30%"></span>
+                                <span class="risk-track-threshold-70" title="High Risk: 70%"></span>
                                 <div class="risk-fill-bar bar-seismic" id="seismicRiskBar" style="width: 0%;"></div>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                <small class="text-danger font-monospace" style="font-size: 0.65rem;">Source: Motion Sensor (SW-420)</small>
-                                <small class="text-muted font-monospace" style="font-size: 0.65rem;" id="seismicKineticsNote">Tremor Displacement</small>
+                            <div class="risk-bar-meta">
+                                <span class="risk-bar-source text-danger">Source: Motion Sensor (SW-420)</span>
+                                <span class="text-slate-400 font-monospace" style="font-size: 0.68rem;" id="seismicKineticsNote">Tremor Displacement</span>
+                            </div>
+                            <div class="risk-bar-impact">
+                                🎯 <strong>Vulnerable:</strong> Substation anchor bolts, porcelain bushings & Buchholz relay
                             </div>
                         </div>
 
-                        <!-- Bar C: High Temperature Damage (Temp Sensor) -->
+                        <!-- Bar C: High Temperature Environmental Damage (Temp Sensor) -->
                         <div class="risk-bar-card">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small text-light fw-bold">☀️ High Temperature Damage</span>
-                                <strong class="font-monospace text-info small" id="thermalRiskPercent">--%</strong>
+                            <div class="risk-bar-header">
+                                <span class="risk-bar-title">☀️ Ambient High Temperature Stress</span>
+                                <strong class="risk-bar-score text-info" id="thermalRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
+                                <span class="risk-track-threshold-30" title="Safe Limit: 30%"></span>
+                                <span class="risk-track-threshold-70" title="High Risk: 70%"></span>
                                 <div class="risk-fill-bar bar-thermal" id="thermalRiskBar" style="width: 0%;"></div>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                <small class="text-info font-monospace" style="font-size: 0.65rem;">Source: Temp Sensor (LM35)</small>
-                                <small class="text-muted font-monospace" style="font-size: 0.65rem;">Thermal Stress Level</small>
+                            <div class="risk-bar-meta">
+                                <span class="risk-bar-source text-info">Source: Ambient Sensor (LM35)</span>
+                                <span class="text-slate-400 font-monospace" style="font-size: 0.68rem;">IEEE C57.91 Arrhenius Stress</span>
+                            </div>
+                            <div class="risk-bar-impact">
+                                🎯 <strong>Vulnerable:</strong> Insulation cellulose paper, oil dielectric breakdown & gasket aging
                             </div>
                         </div>
                     </div>
@@ -651,33 +716,37 @@
                     <div class="env-chart-container mt-3">
                         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-warning text-dark font-monospace">LIVE KINETICS GRAPH</span>
-                                <strong class="small text-white">Atmospheric Rust & Seismic Motion Dynamic Trend (Last 25 frames)</strong>
+                                <span class="badge bg-warning text-dark font-monospace fw-bold">LIVE TREND</span>
+                                <strong class="small text-white">Exposure history</strong>
                             </div>
                             <div class="env-chart-legend">
-                                <span><i class="dot-rust"></i> Rust Risk (%)</span>
-                                <span><i class="dot-seismic"></i> Seismic Shock (%)</span>
-                                <span><i class="dot-rh"></i> Humidity (%)</span>
-                                <span><i class="dot-temp"></i> Temp (°C)</span>
+                                <span class="env-legend-chip"><i class="dot-rust"></i> Rust Risk: <strong id="legendRustVal">--%</strong></span>
+                                <span class="env-legend-chip"><i class="dot-seismic"></i> Seismic Shock: <strong id="legendSeismicVal">--%</strong></span>
+                                <span class="env-legend-chip"><i class="dot-rh"></i> Humidity: <strong id="legendRhVal">--%</strong></span>
+                                <span class="env-legend-chip"><i class="dot-temp"></i> Ambient: <strong id="legendTempVal">--°C</strong></span>
                             </div>
                         </div>
                         <div class="env-svg-wrapper">
                             <svg class="env-trend-svg" id="envTrendSvg" viewBox="0 0 600 150" preserveAspectRatio="none">
                                 <defs>
                                     <linearGradient id="gradRustArea" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25"/>
+                                        <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.3"/>
                                         <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0"/>
                                     </linearGradient>
                                     <linearGradient id="gradSeismicArea" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#ec4899" stop-opacity="0.25"/>
+                                        <stop offset="0%" stop-color="#ec4899" stop-opacity="0.3"/>
                                         <stop offset="100%" stop-color="#ec4899" stop-opacity="0.0"/>
                                     </linearGradient>
                                 </defs>
                                 <line class="chart-gridline" x1="40" y1="15" x2="590" y2="15"/>
+                                <line class="chart-gridline" x1="40" y1="40" x2="590" y2="40"/>
                                 <line class="chart-gridline" x1="40" y1="65" x2="590" y2="65"/>
+                                <line class="chart-gridline" x1="40" y1="90" x2="590" y2="90"/>
                                 <line class="chart-gridline" x1="40" y1="115" x2="590" y2="115"/>
                                 <text class="chart-axis-label" x="32" y="20" text-anchor="end">100%</text>
+                                <text class="chart-axis-label" x="32" y="45" text-anchor="end">75%</text>
                                 <text class="chart-axis-label" x="32" y="70" text-anchor="end">50%</text>
+                                <text class="chart-axis-label" x="32" y="95" text-anchor="end">25%</text>
                                 <text class="chart-axis-label" x="32" y="120" text-anchor="end">0%</text>
 
                                 <!-- Area fills -->
@@ -693,13 +762,20 @@
                         </div>
                     </div>
 
-                    <!-- Actionable Advisory & Physics Summary -->
+                    <!-- Actionable Advisory & Physics Summary SCADA Panel -->
                     <div class="env-advisory-box mt-3">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-warning text-dark font-monospace fw-bold">ACTIONABLE SITE ADVISORY</span>
-                            <span class="text-white small font-sans fw-bold" id="envActionTitle">Preventative Status Active</span>
+                        <div class="env-advisory-main">
+                            <div class="env-advisory-header">
+                                <span class="badge bg-warning text-dark font-monospace fw-bold px-2 py-1">ACTIONABLE SITE ADVISORY</span>
+                                <span class="text-white small font-sans fw-bold" id="envActionTitle">Preventative Status Active</span>
+                            </div>
+                            <p class="env-advisory-desc" id="riskDescription">Loading environmental telemetry and multi-sensor kinetic calculations...</p>
                         </div>
-                        <p class="text-muted small mb-0 font-sans" id="riskDescription">Loading environmental telemetry and multi-sensor kinetic calculations...</p>
+                        <div class="env-advisory-actions">
+                            <button type="button" class="btn btn-outline-warning btn-sm font-monospace" id="copyEnvAdvisoryBtn">
+                                <span id="copyBtnIcon">📋</span> Copy Site Advisory
+                            </button>
+                        </div>
                     </div>
                 </article>
 

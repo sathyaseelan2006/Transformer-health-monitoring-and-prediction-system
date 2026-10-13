@@ -1825,22 +1825,114 @@ model-viewer {
    MODULE 03: MULTI-SENSOR ENVIRONMENTAL RISK FUSION
    ========================================================================== */
 .env-fusion-card {
-    border: 1px solid rgba(245, 158, 11, 0.35) !important;
-    background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.08), transparent 70%),
-                rgba(15, 23, 42, 0.85) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 25px rgba(245, 158, 11, 0.12) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 60%),
+                radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.08), transparent 60%),
+                rgba(13, 20, 36, 0.92) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 30px rgba(245, 158, 11, 0.15) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
 }
 
+/* High contrast overrides for env-fusion-card */
+.env-fusion-card .text-muted {
+    color: #94a3b8 !important;
+}
+
+/* Quick Threat Simulation Toolbar */
+.env-scenario-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 16px;
+    margin-top: 14px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 10px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.env-toolbar-label {
+    font-size: 0.74rem;
+    font-family: var(--mono);
+    color: #e2e8f0;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+}
+
+.env-pulse-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    display: inline-block;
+    animation: ledPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes ledPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.env-preset-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.env-preset-btn {
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.env-preset-btn:hover {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: #38bdf8;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+}
+
+.env-preset-btn.active {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: #f59e0b;
+    color: #fef08a;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+/* Fused Score Hero Container */
 .env-hero-container {
     display: grid;
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 220px 1fr;
     gap: 20px;
-    align-items: center;
-    margin-top: 16px;
-    padding: 18px 24px;
-    background: rgba(2, 6, 23, 0.75);
+    align-items: stretch;
+    margin-top: 14px;
+    padding: 20px 22px;
+    background: rgba(2, 6, 23, 0.82);
     border-radius: 14px;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .env-score-gauge {
@@ -1849,35 +1941,47 @@ model-viewer {
     align-items: center;
     justify-content: center;
     text-align: center;
+    padding: 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .env-dial-wrap {
     position: relative;
-    width: 130px;
-    height: 130px;
+    width: 140px;
+    height: 140px;
 }
 
 .env-dial-svg {
     width: 100%;
     height: 100%;
     transform: rotate(-90deg);
+    filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.25));
 }
 
 .env-dial-track {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.12);
-    stroke-width: 12;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 11;
+}
+
+.env-dial-ticks {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.18);
+    stroke-width: 2;
+    stroke-dasharray: 2 12;
 }
 
 .env-dial-fill {
     fill: none;
     stroke: #00f0ff;
-    stroke-width: 12;
+    stroke-width: 11;
     stroke-linecap: round;
     stroke-dasharray: 402.12;
     stroke-dashoffset: 402.12;
-    transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease;
-    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.5));
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease;
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.6));
 }
 
 .env-dial-center {
@@ -1890,181 +1994,376 @@ model-viewer {
 }
 
 .env-score-num {
-    font-size: 2rem;
+    font-size: 2.2rem;
     font-weight: 900;
     font-family: var(--mono);
     color: #ffffff;
     line-height: 1;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
 }
 
 .env-score-unit {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     font-family: var(--mono);
     color: #38bdf8;
-    margin-top: 3px;
-    letter-spacing: 0.05em;
+    margin-top: 4px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .env-dial-meta {
-    margin-top: 10px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
 }
 
 .env-dial-meta span {
-    font-size: 0.84rem;
+    font-size: 0.86rem;
     font-weight: 800;
-    display: block;
+    color: #f8fafc;
+    letter-spacing: 0.04em;
 }
 
+/* Micro badges inside gauge and sensors */
+.env-micro-pill {
+    font-size: 0.68rem;
+    font-family: var(--mono);
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.2;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.env-micro-pill.safe {
+    color: #4ade80 !important;
+    border-color: rgba(74, 222, 128, 0.4) !important;
+    background: rgba(22, 101, 52, 0.25) !important;
+}
+
+.env-micro-pill.warning {
+    color: #fbbf24 !important;
+    border-color: rgba(251, 191, 36, 0.4) !important;
+    background: rgba(180, 83, 9, 0.25) !important;
+}
+
+.env-micro-pill.danger {
+    color: #f87171 !important;
+    border-color: rgba(248, 113, 113, 0.45) !important;
+    background: rgba(153, 27, 27, 0.3) !important;
+}
+
+.env-micro-pill.info {
+    color: #38bdf8 !important;
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    background: rgba(3, 105, 161, 0.25) !important;
+}
+
+.env-micro-pill.purple {
+    color: #e879f9 !important;
+    border-color: rgba(232, 121, 249, 0.4) !important;
+    background: rgba(134, 25, 143, 0.25) !important;
+}
+
+/* 3 Sensor Trio Cards */
 .env-sensor-trio {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+    gap: 16px;
 }
 
 .env-sensor-box {
-    padding: 16px;
+    padding: 16px 18px;
     border-radius: 12px;
-    background: rgba(30, 41, 59, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    background: rgba(20, 30, 48, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .env-sensor-box:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 240, 255, 0.2);
+    box-shadow: 0 8px 24px rgba(0, 240, 255, 0.22);
 }
 
 .temp-box {
     border-left: 4px solid #f97316;
-    background: linear-gradient(145deg, rgba(249, 115, 22, 0.12), rgba(15, 23, 42, 0.7));
+    background: linear-gradient(150deg, rgba(249, 115, 22, 0.16), rgba(15, 23, 42, 0.85));
+}
+
+.temp-box:hover {
+    border-color: rgba(249, 115, 22, 0.8);
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.25);
 }
 
 .humidity-box {
     border-left: 4px solid #38bdf8;
-    background: linear-gradient(145deg, rgba(56, 189, 248, 0.12), rgba(15, 23, 42, 0.7));
+    background: linear-gradient(150deg, rgba(56, 189, 248, 0.16), rgba(15, 23, 42, 0.85));
+}
+
+.humidity-box:hover {
+    border-color: rgba(56, 189, 248, 0.8);
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
 }
 
 .motion-box {
     border-left: 4px solid #ec4899;
-    background: linear-gradient(145deg, rgba(236, 72, 153, 0.12), rgba(15, 23, 42, 0.7));
+    background: linear-gradient(150deg, rgba(236, 72, 153, 0.16), rgba(15, 23, 42, 0.85));
+}
+
+.motion-box:hover {
+    border-color: rgba(236, 72, 153, 0.8);
+    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.25);
+}
+
+.seismic-alert-pulse {
+    animation: seismicTremorAnim 0.35s infinite ease-in-out;
+}
+
+@keyframes seismicTremorAnim {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-2px, 1px); }
+    50% { transform: translate(2px, -1px); }
+    75% { transform: translate(-1px, 2px); }
 }
 
 .sensor-icon-title {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 8px;
 }
 
 .sensor-icon {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.3));
 }
 
 .sensor-name {
     display: block;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 800;
     color: #ffffff;
-    line-height: 1.1;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+}
+
+.sensor-model-tag {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    font-family: var(--mono);
+    font-weight: 600;
 }
 
 .sensor-val {
     display: block;
-    font-size: 1.6rem;
+    font-size: 1.75rem;
     font-family: var(--mono);
-    font-weight: 800;
+    font-weight: 900;
     color: #ffffff;
-    margin-bottom: 6px;
+    margin: 4px 0 8px 0;
+    line-height: 1.1;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.sensor-sub-metrics-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 8px;
+    margin-top: 4px;
 }
 
 .sensor-sub-metric {
-    font-size: 0.72rem;
-    color: #94a3b8;
+    font-size: 0.74rem;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+/* Computed Damage Breakdown Risk Bars */
+.env-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.risk-bar-card {
+    padding: 16px 18px;
+    background: rgba(15, 23, 42, 0.82);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.risk-bar-card:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.risk-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.risk-bar-title {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #f8fafc;
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.env-breakdown-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-}
-
-.risk-bar-card {
-    padding: 14px 16px;
-    background: rgba(15, 23, 42, 0.7);
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.risk-bar-score {
+    font-size: 1rem;
+    font-weight: 900;
+    font-family: var(--mono);
 }
 
 .risk-track-bar {
-    height: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
     overflow: hidden;
     margin: 8px 0;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.risk-track-threshold-30 {
+    position: absolute;
+    left: 30%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.18);
+    z-index: 2;
+}
+
+.risk-track-threshold-70 {
+    position: absolute;
+    left: 70%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.18);
+    z-index: 2;
 }
 
 .risk-fill-bar {
     height: 100%;
-    border-radius: 6px;
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 8px;
+    transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    background-size: 30px 30px;
+    background-image: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.15) 75%,
+        transparent 75%,
+        transparent
+    );
+    animation: barShimmer 2.5s linear infinite;
+}
+
+@keyframes barShimmer {
+    0% { background-position: 0 0; }
+    100% { background-position: 60px 0; }
 }
 
 .bar-rust {
-    background: linear-gradient(90deg, #d97706, #ef4444);
-    box-shadow: 0 0 10px rgba(217, 119, 6, 0.5);
+    background-color: #d97706;
+    background-image: linear-gradient(90deg, #d97706, #ef4444);
+    box-shadow: 0 0 12px rgba(217, 119, 6, 0.6);
 }
 
 .bar-seismic {
-    background: linear-gradient(90deg, #ec4899, #ef4444);
-    box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+    background-color: #ec4899;
+    background-image: linear-gradient(90deg, #ec4899, #ef4444);
+    box-shadow: 0 0 12px rgba(236, 72, 153, 0.6);
 }
 
 .bar-thermal {
-    background: linear-gradient(90deg, #06b6d4, #f59e0b);
-    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+    background-color: #06b6d4;
+    background-image: linear-gradient(90deg, #06b6d4, #f59e0b);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.6);
 }
 
-.env-advisory-box {
-    padding: 10px 14px;
-    background: rgba(245, 158, 11, 0.08);
-    border-radius: 8px;
-    border: 1px solid rgba(245, 158, 11, 0.25);
+.risk-bar-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
 }
 
+.risk-bar-source {
+    font-size: 0.68rem;
+    font-family: var(--mono);
+    font-weight: 700;
+}
+
+.risk-bar-impact {
+    font-size: 0.68rem;
+    font-family: var(--sans);
+    color: #94a3b8;
+    margin-top: 4px;
+    line-height: 1.2;
+}
+
+/* Live Kinetics Waveform Trend Graph */
 .env-chart-container {
-    padding: 14px 16px;
-    border-radius: 10px;
-    background: rgba(2, 6, 23, 0.7);
-    border: 1px solid rgba(245, 158, 11, 0.25);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: rgba(2, 6, 23, 0.85);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .env-chart-legend {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     flex-wrap: wrap;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     font-family: var(--mono);
-    color: var(--soft);
+    color: #cbd5e1;
 }
 
-.env-chart-legend span {
+.env-legend-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.env-chart-legend i {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
+.env-legend-chip strong {
+    color: #ffffff;
+    font-weight: 800;
 }
 
 .dot-rust { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
@@ -2075,17 +2374,56 @@ model-viewer {
 .env-svg-wrapper {
     width: 100%;
     overflow: hidden;
-    margin-top: 8px;
+    margin-top: 10px;
 }
 
 .env-trend-svg {
     display: block;
     width: 100%;
-    height: 140px;
+    height: 150px;
 }
 
 .env-trend-line {
     transition: d 0.3s ease;
+}
+
+/* Actionable Site Advisory SCADA Callout */
+.env-advisory-box {
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(15, 23, 42, 0.85));
+    border-radius: 12px;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.env-advisory-main {
+    flex: 1;
+    min-width: 280px;
+}
+
+.env-advisory-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.env-advisory-desc {
+    color: #f1f5f9 !important;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    margin-bottom: 0;
+}
+
+.env-advisory-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 @media (max-width: 900px) {
@@ -2096,6 +2434,135 @@ model-viewer {
     .env-breakdown-grid {
         grid-template-columns: 1fr;
     }
+    .env-advisory-box {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ========================================================================
+   MODULE 03 — operator-focused visual refresh
+   Keeps the panel quiet at a glance and reserves colour for signal states.
+   ======================================================================== */
+.env-fusion-card {
+    --env-ink: #f8fafc;
+    --env-muted: #a8b4c7;
+    --env-border: rgba(148, 163, 184, .22);
+    padding: 26px !important;
+    border: 1px solid rgba(245, 158, 11, .38) !important;
+    background:
+        radial-gradient(900px 380px at 100% 0%, rgba(245, 158, 11, .10), transparent 58%),
+        linear-gradient(145deg, rgba(15, 23, 42, .98), rgba(5, 10, 22, .98)) !important;
+    box-shadow: 0 22px 64px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06) !important;
+}
+
+.env-fusion-card .panel-head { align-items: center; margin-bottom: 20px; }
+.env-fusion-card .panel-kicker { color: #fbbf24; }
+.env-fusion-card .panel-head h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); letter-spacing: -.035em; }
+.env-intro { max-width: 720px; margin: 7px 0 0; color: var(--env-muted); font-size: .9rem; line-height: 1.55; }
+.env-fusion-card .risk-pill { color: #bbf7d0; background: rgba(16, 185, 129, .10); border-color: rgba(52, 211, 153, .42); }
+.env-fusion-card #envFormulaBadge { color: #93e9fb !important; background: rgba(8, 47, 73, .34) !important; border-color: rgba(56, 189, 248, .32) !important; }
+
+.env-scenario-toolbar {
+    margin-top: 0;
+    padding: 11px 14px;
+    border-color: var(--env-border);
+    border-radius: 10px;
+    background: rgba(2, 6, 23, .62);
+    box-shadow: none;
+}
+.env-toolbar-label { color: var(--env-muted); font-size: .67rem; letter-spacing: .12em; }
+.env-preset-group { gap: 6px; }
+.env-preset-btn {
+    min-height: 30px;
+    padding: 5px 10px;
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, .22);
+    border-radius: 7px;
+    background: rgba(30, 41, 59, .48);
+    font-size: .67rem;
+}
+.env-preset-btn span { font-size: .7rem; color: #64748b; }
+.env-preset-btn:nth-child(2) span { color: #f59e0b; }
+.env-preset-btn:nth-child(3) span { color: #ec4899; }
+.env-preset-btn:nth-child(4) span { color: #fb7185; }
+.env-preset-btn.active { color: #101827; background: #fbbf24; border-color: #fbbf24; box-shadow: none; }
+.env-preset-btn.active span { color: currentColor; }
+
+.env-hero-container {
+    grid-template-columns: 232px 1fr;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 16px;
+    border-color: var(--env-border);
+    border-radius: 12px;
+    background: rgba(2, 6, 23, .54);
+    box-shadow: none;
+}
+.env-score-gauge { min-height: 196px; padding: 10px; border-color: var(--env-border); background: linear-gradient(160deg, rgba(30, 41, 59, .70), rgba(15, 23, 42, .34)); }
+.env-dial-wrap { width: 126px; height: 126px; }
+.env-score-num { font-size: 2.35rem; }
+.env-score-unit { font-size: .6rem; letter-spacing: .1em; }
+.env-dial-meta { margin-top: 5px; gap: 4px; }
+.env-dial-meta span { font-size: .72rem; }
+.env-micro-pill { padding: 3px 7px; border-radius: 999px; font-size: .59rem; }
+
+.env-sensor-trio { gap: 10px; }
+.env-sensor-box {
+    min-height: 196px;
+    padding: 15px;
+    border: 1px solid var(--env-border);
+    border-left-width: 3px;
+    border-radius: 10px;
+    box-shadow: none;
+}
+.env-sensor-box:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 0, 0, .28); }
+.temp-box { background: linear-gradient(155deg, rgba(154, 52, 18, .22), rgba(15, 23, 42, .80) 62%); }
+.humidity-box { background: linear-gradient(155deg, rgba(3, 105, 161, .19), rgba(15, 23, 42, .80) 62%); }
+.motion-box { background: linear-gradient(155deg, rgba(131, 24, 67, .19), rgba(15, 23, 42, .80) 62%); }
+.sensor-icon-title { gap: 9px; margin-bottom: 6px; }
+.sensor-icon { font-size: 1.15rem; filter: none; }
+.sensor-name { font-size: .76rem; }
+.sensor-model-tag { color: #8fa0b6; font-size: .6rem; }
+.sensor-val { margin: 4px 0 10px; font-size: 1.65rem; }
+.sensor-sub-metrics-group { padding-top: 8px; }
+.sensor-sub-metric { color: #b5c0d0; font-size: .66rem; }
+
+.env-breakdown-grid { gap: 10px; margin-top: 12px !important; }
+.risk-bar-card { padding: 14px; border-color: var(--env-border); border-radius: 10px; background: rgba(15, 23, 42, .56); box-shadow: none; }
+.risk-bar-card:hover { border-color: rgba(245, 158, 11, .40); transform: none; }
+.risk-bar-title { color: var(--env-ink); font-size: .73rem; }
+.risk-bar-score { font-size: .95rem; }
+.risk-track-bar { height: 8px; margin: 10px 0 8px; border: 0; background: rgba(148, 163, 184, .15); }
+.risk-fill-bar { animation: none; }
+.risk-bar-source, .risk-bar-impact { color: var(--env-muted); font-size: .61rem; }
+.risk-bar-meta { align-items: flex-start; gap: 8px; }
+.risk-bar-meta > span:last-child { color: #718096 !important; text-align: right; }
+
+.env-chart-container { margin-top: 12px !important; padding: 14px 16px; border-color: var(--env-border); border-radius: 10px; background: rgba(2, 6, 23, .54); box-shadow: none; }
+.env-chart-container .badge { font-size: .62rem; }
+.env-chart-container strong { font-size: .78rem; }
+.env-chart-legend { gap: 6px; font-size: .62rem; }
+.env-legend-chip { padding: 3px 6px; border-color: rgba(148, 163, 184, .16); background: rgba(30, 41, 59, .42); }
+.env-trend-svg { height: 138px; }
+.chart-axis-label { fill: #8391a6 !important; font-size: 9px; }
+.chart-gridline { stroke: rgba(148, 163, 184, .18) !important; }
+
+.env-advisory-box { margin-top: 12px !important; padding: 14px 16px; border-color: rgba(245, 158, 11, .30); border-radius: 10px; background: linear-gradient(100deg, rgba(120, 53, 15, .20), rgba(15, 23, 42, .56) 58%); box-shadow: none; }
+.env-advisory-desc { color: #cbd5e1 !important; font-size: .78rem; }
+
+@media (max-width: 900px) {
+    .env-fusion-card { padding: 18px !important; }
+    .env-fusion-card .panel-head { align-items: flex-start; }
+    .env-sensor-trio { grid-template-columns: 1fr; }
+    .env-sensor-box { min-height: 0; }
+}
+@media (max-width: 560px) {
+    .env-fusion-card .panel-head > div:last-child { align-items: flex-start !important; }
+    .env-preset-group { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+    .env-preset-btn { justify-content: center; }
+    .env-hero-container { padding: 10px; }
+    .env-chart-legend { display: grid; grid-template-columns: 1fr 1fr; }
 }
 
 /* IEEE C57.91 / IEC 60076-7 Physics Engine Card Styling */
@@ -2154,6 +2621,125 @@ model-viewer {
     font-size: 0.72rem;
     color: var(--muted);
     font-family: var(--sans);
+}
+
+/* MODULE 03: restrained risk overview — supersedes the earlier neon treatment */
+.env-fusion-card {
+    --env-paper: #f4f7fb;
+    --env-muted: #94a3b8;
+    --env-line: rgba(148, 163, 184, .18);
+    padding: 30px !important;
+    border: 1px solid rgba(100, 116, 139, .30) !important;
+    border-radius: 16px !important;
+    background: #0b1220 !important;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, .22) !important;
+}
+.env-fusion-card:hover { transform: none; border-color: rgba(100, 116, 139, .48) !important; box-shadow: 0 18px 45px rgba(0, 0, 0, .22) !important; }
+.env-fusion-card .panel-head { margin-bottom: 24px; align-items: flex-start; }
+.env-fusion-card .panel-kicker { color: #38bdf8; font-size: .65rem; letter-spacing: .13em; }
+.env-fusion-card .panel-kicker .badge { border-radius: 5px; background: #0ea5e9 !important; color: #06111e !important; }
+.env-fusion-card .panel-head h2 { margin-top: 7px; color: var(--env-paper); font-size: clamp(1.75rem, 3vw, 2.45rem); font-weight: 750; letter-spacing: -.045em; }
+.env-intro { max-width: 610px; margin-top: 8px; color: var(--env-muted); font-size: .9rem; line-height: 1.55; }
+.env-fusion-card .risk-pill { min-height: 28px; padding: 5px 10px; color: #86efac; background: rgba(34, 197, 94, .09); border-color: rgba(34, 197, 94, .36); font-size: .64rem; }
+.env-fusion-card #envFormulaBadge { margin-top: 4px; color: #7dd3fc !important; background: transparent !important; border-color: transparent !important; font-size: .61rem; padding: 0; }
+
+.env-scenario-toolbar { gap: 16px; margin: 0; padding: 10px 0 18px; border: 0; border-bottom: 1px solid var(--env-line); border-radius: 0; background: transparent; }
+.env-toolbar-label { color: #cbd5e1; font-size: .64rem; letter-spacing: .11em; }
+.env-pulse-led { width: 7px; height: 7px; box-shadow: none; }
+.env-preset-group { padding: 3px; gap: 2px; border: 1px solid var(--env-line); border-radius: 9px; background: #111a2b; }
+.env-preset-btn { min-height: 29px; padding: 4px 9px; color: #aab7ca; border: 0; border-radius: 6px; background: transparent; font-size: .64rem; }
+.env-preset-btn:hover { transform: none; background: rgba(148, 163, 184, .12); box-shadow: none; }
+.env-preset-btn.active { color: #06111e; background: #dbeafe; box-shadow: none; }
+
+.env-hero-container { grid-template-columns: 240px 1fr; gap: 28px; margin-top: 24px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.env-score-gauge { min-height: 0; padding: 20px 18px; align-items: flex-start; text-align: left; border: 1px solid var(--env-line); border-radius: 12px; background: linear-gradient(145deg, #132239, #0d1728); }
+.env-dial-wrap { width: auto; height: auto; }
+.env-dial-svg { display: none; }
+.env-dial-center { position: static; display: flex; align-items: baseline; gap: 8px; }
+.env-score-num { color: var(--env-paper); font: 750 clamp(3.2rem, 5vw, 4.25rem)/.9 var(--font); letter-spacing: -.08em; text-shadow: none; }
+.env-score-unit { margin: 0 0 5px; color: #7dd3fc; font-size: .60rem; letter-spacing: .09em; }
+.env-dial-meta { align-items: flex-start; gap: 7px; margin-top: 20px; }
+.env-dial-meta span { font-size: .73rem; letter-spacing: .02em; }
+.env-micro-pill { padding: 4px 7px; border: 0 !important; border-radius: 5px; background: rgba(148, 163, 184, .10) !important; font-size: .58rem; }
+.env-micro-pill.safe { color: #86efac !important; }
+.env-micro-pill.info { color: #7dd3fc !important; }
+.env-micro-pill.purple { color: #e9a8ff !important; }
+
+.env-sensor-trio { gap: 0; border: 1px solid var(--env-line); border-radius: 12px; overflow: hidden; background: #0e1727; }
+.env-sensor-box { min-height: 204px; padding: 20px; border: 0; border-left: 1px solid var(--env-line); border-radius: 0; background: transparent !important; box-shadow: none; }
+.env-sensor-box:first-child { border-left: 0; }
+.env-sensor-box:hover { transform: none; box-shadow: none; background: rgba(148, 163, 184, .04) !important; }
+.sensor-icon-title { gap: 8px; margin-bottom: 15px; }
+.sensor-icon { font-size: 1.05rem; filter: none; }
+.sensor-name { color: #dce5f2; font-size: .72rem; font-weight: 700; }
+.sensor-model-tag { margin-top: 3px; color: #718096; font-size: .57rem; }
+.sensor-val { margin: 0; color: var(--env-paper) !important; font: 750 2rem/1 var(--font); letter-spacing: -.05em; text-shadow: none; }
+.temp-box .sensor-val { color: #fbbf24 !important; }
+.humidity-box .sensor-val { color: #5dd5f5 !important; }
+.motion-box .sensor-val { color: #fda4af !important; }
+.sensor-sub-metrics-group { gap: 8px; padding-top: 14px; margin-top: auto; border-top-color: var(--env-line); }
+.sensor-sub-metric { color: #8b9ab0; font-size: .63rem; }
+.sensor-sub-metric strong { color: #dce5f2 !important; font-size: .66rem; }
+
+.env-breakdown-grid { gap: 12px; margin-top: 28px !important; }
+.risk-bar-card { padding: 16px 0 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.risk-bar-card:hover { transform: none; border: 0; }
+.risk-bar-header { margin-bottom: 10px; }
+.risk-bar-title { color: #dce5f2; font-size: .70rem; }
+.risk-bar-score { color: var(--env-paper); font: 700 1.05rem var(--font); }
+.risk-track-bar { height: 6px; margin: 0 0 10px; border: 0; border-radius: 99px; background: #253247; }
+.risk-fill-bar { border-radius: 99px; box-shadow: none; }
+.bar-rust { background: #f59e0b; }
+.bar-seismic { background: #ec4899; }
+.bar-thermal { background: #22c55e; }
+.risk-track-threshold-30, .risk-track-threshold-70 { background: rgba(255,255,255,.38); }
+.risk-bar-source { color: #97a6ba !important; font-size: .58rem; }
+.risk-bar-meta > span:last-child { display: none; }
+.risk-bar-impact { display: none; }
+
+.env-chart-container { margin-top: 28px !important; padding: 20px 0 0; border: 0; border-top: 1px solid var(--env-line); border-radius: 0; background: transparent; box-shadow: none; }
+.env-chart-container .badge { padding: 4px 6px; border-radius: 4px; font-size: .56rem; }
+.env-chart-container strong { color: #dce5f2 !important; font-size: .76rem; }
+.env-chart-legend { gap: 5px; }
+.env-legend-chip { padding: 4px 7px; border-color: var(--env-line); border-radius: 5px; background: #111a2b; color: #aab7ca; font-size: .59rem; }
+.env-legend-chip strong { color: #f8fafc !important; font-size: .60rem; }
+.env-svg-wrapper { margin-top: 14px; padding: 8px 10px 0; border: 1px solid var(--env-line); border-radius: 10px; background: #0a1120; }
+.env-trend-svg { height: 150px; }
+.chart-gridline { stroke: rgba(148, 163, 184, .13) !important; }
+.chart-axis-label { fill: #64748b !important; font-size: 8px; font-family: var(--mono); }
+
+.env-advisory-box { margin-top: 22px !important; padding: 16px 0 0; border: 0; border-top: 1px solid var(--env-line); border-radius: 0; background: transparent; box-shadow: none; }
+.env-advisory-header { gap: 8px; margin-bottom: 4px; }
+.env-advisory-header .badge { padding: 4px 6px !important; border-radius: 4px; font-size: .56rem; }
+.env-advisory-desc { color: #9dabbe !important; font-size: .77rem; }
+.env-advisory-actions .btn { border-color: #334155; color: #e2e8f0; font-size: .66rem; }
+.env-advisory-actions .btn:hover { border-color: #7dd3fc; background: rgba(56,189,248,.1); }
+
+@media (max-width: 980px) { .env-hero-container { grid-template-columns: 1fr; gap: 14px; } .env-score-gauge { min-height: 150px; } }
+@media (max-width: 720px) { .env-fusion-card { padding: 20px !important; } .env-scenario-toolbar { align-items: flex-start; } .env-sensor-trio { grid-template-columns: 1fr; } .env-sensor-box { min-height: 0; border-top: 1px solid var(--env-line); border-left: 0; } .env-sensor-box:first-child { border-top: 0; } .env-breakdown-grid { grid-template-columns: 1fr; gap: 18px; } }
+
+/* Environmental trend chart: more plot room, clearer traces and a quiet legend */
+.env-chart-container { margin-top: 30px !important; padding-top: 22px; }
+.env-chart-container > .d-flex { align-items: flex-start !important; margin-bottom: 12px !important; }
+.env-chart-container > .d-flex > div:first-child { gap: 10px !important; }
+.env-chart-container .badge { color: #7dd3fc !important; background: rgba(14, 165, 233, .12) !important; }
+.env-chart-container strong { font-size: .88rem !important; }
+.env-chart-legend { justify-content: flex-end; gap: 14px; }
+.env-legend-chip { gap: 7px; padding: 2px 0; border: 0; background: transparent; font-size: .66rem; }
+.env-legend-chip i { display: inline-block; width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; box-shadow: none; }
+.env-legend-chip strong { margin-left: 2px; font-size: .67rem !important; }
+.env-svg-wrapper { margin-top: 12px; padding: 10px 12px 0; border-color: rgba(148, 163, 184, .13); background: linear-gradient(180deg, #0a1120, #0c1525); }
+.env-trend-svg { height: 205px; }
+.env-trend-svg .chart-gridline { stroke: rgba(148, 163, 184, .15) !important; stroke-width: 1; }
+.env-trend-svg .chart-axis-label { fill: #8b9bb1 !important; font-size: 10px; font-weight: 500; }
+.env-trend-svg #envRustTrendPath { stroke-width: 3.4; filter: drop-shadow(0 2px 5px rgba(245, 158, 11, .24)); }
+.env-trend-svg #envSeismicTrendPath { stroke-width: 3.2; filter: drop-shadow(0 2px 5px rgba(236, 72, 153, .24)); }
+.env-trend-svg #envRhTrendPath, .env-trend-svg #envTempTrendPath { stroke-width: 2.4; }
+.env-trend-svg #envRustArea, .env-trend-svg #envSeismicArea { opacity: .24; }
+@media (max-width: 760px) {
+    .env-chart-container > .d-flex { align-items: flex-start !important; }
+    .env-chart-legend { justify-content: flex-start; display: grid; grid-template-columns: repeat(2, max-content); gap: 7px 16px; }
+    .env-trend-svg { height: 175px; }
 }
 
 

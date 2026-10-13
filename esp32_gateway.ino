@@ -15,6 +15,7 @@ const char* serverUrl = "http://172.3.2.135:8080/api/telemetry";
 void setup() {
   Serial.begin(115200);
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  Serial2.setTimeout(100); // 100ms timeout for non-blocking UART read
 
   Serial.println("\n[ESP32 Gateway] Initializing Wi-Fi...");
   WiFi.mode(WIFI_STA);
@@ -32,7 +33,7 @@ void setup() {
     Serial.println("[OK] ESP32 IP Address: " + WiFi.localIP().toString());
     Serial.println("[OK] Telemetry Target: " + String(serverUrl));
   } else {
-    Serial.println("\n[WARN] Wi-Fi connection pending. Retrying in background...");
+    Serial.println("\n[WARN] Wi-Fi connection pending. Listening on UART...");
   }
 }
 
@@ -48,6 +49,7 @@ void loop() {
       if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;
         http.begin(serverUrl);
+        http.setTimeout(2500); // 2.5s timeout prevents blocking loop
         http.addHeader("Content-Type", "application/json");
 
         int httpResponseCode = http.POST(jsonTelemetry);

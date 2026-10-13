@@ -1,0 +1,14 @@
+.venv/
+.pio/
+.git/
+.github/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+scratch/*.db
+ardinuo software.docx
+*.pdf
+*.png

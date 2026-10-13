@@ -4,6 +4,7 @@ Supports MySQL 8.0+ via PyMySQL with transparent local SQLite/in-memory fallback
 """
 import json
 import logging
+import os
 import sqlite3
 from datetime import datetime
 from typing import Dict, Any, List, Optional
@@ -25,6 +26,7 @@ class DatabaseManager:
     def _init_sqlite(self):
         """Initializes embedded fallback SQLite database for resilient local operations."""
         try:
+            os.makedirs("scratch", exist_ok=True)
             self.sqlite_conn = sqlite3.connect("scratch/local_gridguard.db", check_same_thread=False)
             self.sqlite_conn.row_factory = sqlite3.Row
             cursor = self.sqlite_conn.cursor()

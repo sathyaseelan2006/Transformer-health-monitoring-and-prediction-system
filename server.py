@@ -48,37 +48,17 @@ class ScenarioRequest(BaseModel):
 class DiagnoseRequest(BaseModel):
     override: Optional[bool] = False
 
-class Esp32TelemetryPayload(BaseModel):
-    device_id: Optional[str] = "ESP32-TX01"
-    voltage: float
-    current: float
-    temperature: float
-    vibration: float
-    oil_level: Optional[str] = "NORMAL"
-    ambient_temp: Optional[float] = 28.5
-    rel_humidity: Optional[float] = 46.0
-    wind_speed: Optional[float] = 11.2
-    health_index: Optional[float] = None
-
 @app.post("/api/telemetry")
-def receive_esp32_telemetry(payload: Esp32TelemetryPayload):
+async def receive_esp32_telemetry(payload: Dict[str, Any]):
     global esp32_latest_frame, esp32_last_heartbeat, active_mode
+    import json
+    frame = LoRaSerialReceiver.parse_json_payload(json.dumps(payload))
+    if not frame:
+        raise HTTPException(status_code=400, detail="Invalid telemetry JSON structure")
+        
     esp32_last_heartbeat = datetime.now()
     active_mode = "ESP32_WIFI"
-    
-    esp32_latest_frame = TelemetryFrame(
-        timestamp=esp32_last_heartbeat,
-        voltage=payload.voltage,
-        current=payload.current,
-        temperature=payload.temperature,
-        vibration=payload.vibration,
-        oil_level=payload.oil_level.upper() if payload.oil_level else "NORMAL",
-        ambient_temp=payload.ambient_temp or 28.5,
-        rel_humidity=payload.rel_humidity or 46.0,
-        wind_speed=payload.wind_speed or 11.2,
-        device_id=payload.device_id or "ESP32-TX01",
-        edge_thi=payload.health_index
-    )
+    esp32_latest_frame = frame
     return {"status": "ok", "mode": "ESP32_WIFI", "received_at": esp32_last_heartbeat.strftime("%H:%M:%S")}
 
 @app.get("/api/component-health")
@@ -462,4 +442,6 @@ def serve_analytics():
 app.mount("/", StaticFiles(directory="static"), name="root-static")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    import os
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)
