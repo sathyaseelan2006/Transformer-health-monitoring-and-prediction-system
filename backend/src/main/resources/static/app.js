@@ -1208,7 +1208,7 @@ async function runAiDiagnostics() {
         const instrumentsEl = $("diagInstrumentsList");
         if (instrumentsEl && report.recommended_instruments) {
             instrumentsEl.innerHTML = report.recommended_instruments.map(inst => `
-                <span class="badge bg-secondary text-info font-monospace py-2 px-3 border border-info border-opacity-25">${inst}</span>
+                <span class="badge font-monospace py-2 px-3 fw-semibold" style="background: rgba(14, 165, 233, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); font-size: 0.82rem;">${inst}</span>
             `).join("");
         }
 
@@ -1279,11 +1279,11 @@ if (copyAdvBtn) {
             await navigator.clipboard.writeText(textToCopy);
             copyAdvBtn.classList.remove("btn-outline-warning");
             copyAdvBtn.classList.add("btn-success");
-            copyAdvBtn.innerHTML = `<span>✓</span> Copied to Clipboard!`;
+            copyAdvBtn.innerHTML = `<span><svg class="ui-icon me-1 text-white" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span> Copied to Clipboard!`;
             setTimeout(() => {
                 copyAdvBtn.classList.remove("btn-success");
                 copyAdvBtn.classList.add("btn-outline-warning");
-                copyAdvBtn.innerHTML = `<span id="copyBtnIcon">📋</span> Copy Site Advisory`;
+                copyAdvBtn.innerHTML = `<span id="copyBtnIcon"><svg class="ui-icon me-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span> Copy Site Advisory`;
             }, 2200);
         } catch(err) {
             console.error("Failed to copy advisory:", err);

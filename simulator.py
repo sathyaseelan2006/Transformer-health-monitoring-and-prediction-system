@@ -15,8 +15,31 @@ class TransformerSimulator:
         self.simulated_day_offset = 0.0
 
     def set_fault_mode(self, mode: str):
-        """Changes active operational or fault scenario."""
-        self.active_fault_mode = mode
+        """Changes active operational or fault scenario with fuzzy matching support."""
+        if not mode:
+            self.active_fault_mode = "NORMAL"
+            return
+        mode_upper = str(mode).upper().replace("/", "_").replace(" ", "_").replace("-", "_")
+        if "EARTHQUAKE" in mode_upper or "SEISMIC" in mode_upper or "SHAKE" in mode_upper:
+            self.active_fault_mode = "EARTHQUAKE_SEISMIC_SHAKE"
+        elif "HUMIDITY" in mode_upper or "RUST" in mode_upper or "CONDENSATION" in mode_upper:
+            self.active_fault_mode = "HIGH_HUMIDITY_RUST_RISK"
+        elif "OVERLOAD" in mode_upper or "LOAD" in mode_upper:
+            self.active_fault_mode = "OVERLOAD_TRIP"
+        elif "THERMAL" in mode_upper or "RUNAWAY" in mode_upper or "OVERHEAT" in mode_upper:
+            self.active_fault_mode = "THERMAL_RUNAWAY"
+        elif "VIBRATION" in mode_upper or "ANOMALY" in mode_upper:
+            self.active_fault_mode = "VIBRATION_ANOMALY"
+        elif "WILDFIRE" in mode_upper or "FIRE" in mode_upper:
+            self.active_fault_mode = "WILDFIRE_ENVIRONMENTAL_HAZARD"
+        elif "OIL" in mode_upper or "LEAK" in mode_upper:
+            self.active_fault_mode = "OIL_LEAK_CRITICAL"
+        elif "OVERVOLT" in mode_upper or "VOLTAGE" in mode_upper:
+            self.active_fault_mode = "OVERVOLTAGE"
+        elif "BENCH" in mode_upper or "PAPER" in mode_upper:
+            self.active_fault_mode = "PAPER_STRESSED_BENCH"
+        else:
+            self.active_fault_mode = "NORMAL"
 
     def generate_frame(self, fault_override: Optional[str] = None) -> TelemetryFrame:
         mode = fault_override or self.active_fault_mode

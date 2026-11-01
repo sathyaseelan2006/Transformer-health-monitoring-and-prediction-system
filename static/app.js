@@ -445,190 +445,215 @@ let wavePhase = 0;
 let latestPayload = null;
 
 function updateSpatialDynamicGraphs(tel, stress) {
-    wavePhase += 0.06;
-
-    // 1. Calculate dynamic wave peak amplitudes based on live telemetry stress
-    const vAmp = 14 + (stress.s_v * 24) + Math.sin(wavePhase * 1.2) * 4;
-    const iAmp = 12 + (stress.s_i * 20) + Math.cos(wavePhase * 1.5) * 3.5;
-    const vibAmp = 10 + (stress.s_vib * 26) + Math.sin(wavePhase * 2.0) * 5;
-    const thermalPeakY = clamp(60 - (stress.s_t * 35) + Math.sin(wavePhase * 0.9) * 8, 15, 80);
-
-    // 2. Generate smooth sine wave paths for Graph (a)
-    // s-axis (Voltage - Cyan)
-    let dMeasuredV = "M 45 45";
-    for (let x = 45; x <= 380; x += 15) {
-        const y = 45 + Math.sin((x - 45) * 0.05 + wavePhase) * vAmp;
-        dMeasuredV += ` L ${x} ${y.toFixed(1)}`;
-    }
-    let dPredictedV = "M 380 45";
-    for (let x = 380; x <= 505; x += 15) {
-        const y = 45 + Math.sin((x - 45) * 0.08 + wavePhase * 1.8) * (vAmp * 1.4);
-        dPredictedV += ` L ${x} ${y.toFixed(1)}`;
-    }
-
-    // y-axis (Current - Lime)
-    let dMeasuredI = "M 45 105";
-    for (let x = 45; x <= 380; x += 15) {
-        const y = 105 + Math.sin((x - 45) * 0.05 + wavePhase + 1.5) * iAmp;
-        dMeasuredI += ` L ${x} ${y.toFixed(1)}`;
-    }
-    let dPredictedI = "M 380 105";
-    for (let x = 380; x <= 505; x += 15) {
-        const y = 105 + Math.cos((x - 45) * 0.07 + wavePhase * 1.4) * (iAmp * 1.3);
-        dPredictedI += ` L ${x} ${y.toFixed(1)}`;
-    }
-
-    // z-axis (Vibration - Pink/Purple)
-    let dMeasuredVib = "M 45 165";
-    for (let x = 45; x <= 380; x += 15) {
-        const y = 165 + Math.sin((x - 45) * 0.05 + wavePhase + 3.0) * vibAmp;
-        dMeasuredVib += ` L ${x} ${y.toFixed(1)}`;
-    }
-    let dPredictedVib = "M 380 165";
-    for (let x = 380; x <= 505; x += 15) {
-        const y = 165 + Math.sin((x - 45) * 0.09 + wavePhase * 2.2) * (vibAmp * 1.5);
-        dPredictedVib += ` L ${x} ${y.toFixed(1)}`;
-    }
-
-    // Update SVG paths in Graph (a)
-    const cardA = document.querySelectorAll(".wave-graph-card")[0];
-    if (cardA) {
-        const measuredVEl = cardA.querySelector(".wave-path.measured-v");
-        const predictedVEl = cardA.querySelector(".wave-path.predicted-v");
-        const measuredIEl = cardA.querySelector(".wave-path.measured-i");
-        const predictedIEl = cardA.querySelector(".wave-path.predicted-i");
-        const measuredVibEl = cardA.querySelector(".wave-path.measured-vib");
-        const predictedVibEl = cardA.querySelector(".wave-path.predicted-vib");
-
-        if (measuredVEl) measuredVEl.setAttribute("d", dMeasuredV);
-        if (predictedVEl) predictedVEl.setAttribute("d", dPredictedV);
-        if (measuredIEl) measuredIEl.setAttribute("d", dMeasuredI);
-        if (predictedIEl) predictedIEl.setAttribute("d", dPredictedI);
-        if (measuredVibEl) measuredVibEl.setAttribute("d", dMeasuredVib);
-        if (predictedVibEl) predictedVibEl.setAttribute("d", dPredictedVib);
-    }
-
-    // 3. Dynamic Anomaly Peak Focus Circles Y-positions
-    const yPeakA = 45 + Math.sin((435 - 45) * 0.08 + wavePhase * 1.8) * (vAmp * 1.4);
-    const yPeakB = 105 + Math.cos((435 - 45) * 0.07 + wavePhase * 1.4) * (iAmp * 1.3);
-    const yPeakVib = 165 + Math.sin((435 - 45) * 0.09 + wavePhase * 2.2) * (vibAmp * 1.5);
-
-    const focusGroups = document.querySelectorAll(".graph-peak-focus");
-    if (focusGroups[0]) focusGroups[0].setAttribute("transform", `translate(435, ${yPeakA.toFixed(1)})`);
-    if (focusGroups[1]) focusGroups[1].setAttribute("transform", `translate(435, ${yPeakB.toFixed(1)})`);
-    if (focusGroups[2]) focusGroups[2].setAttribute("transform", `translate(435, ${yPeakVib.toFixed(1)})`);
-
-    // 4. Update Graph (c) Thermal Tension Peak
-    const dPredictedThermal = `M 380 125 L 390 125 L 395 ${thermalPeakY.toFixed(1)} L 445 ${thermalPeakY.toFixed(1)} L 450 125 L 505 125`;
-    const cardC = document.querySelectorAll(".wave-graph-card")[1];
-    if (cardC) {
-        const cardCPred = cardC.querySelector(".wave-path.predicted-v");
-        if (cardCPred) cardCPred.setAttribute("d", dPredictedThermal);
-    }
-
-    if (focusGroups[3]) focusGroups[3].setAttribute("transform", `translate(420, ${thermalPeakY.toFixed(1)})`);
-
-    // 5. Update SVG Leader Lines dynamically to track moving focal circles!
-    const lineAEl = document.querySelector(".leader-line.line-a");
-    const lineBEl = document.querySelector(".leader-line.line-b");
-    const lineCEl = document.querySelector(".leader-line.line-c");
-
-    const lineAyStart = 72 + (yPeakA * 0.55);
-    if (lineAEl) lineAEl.setAttribute("d", `M 475 ${lineAyStart.toFixed(1)} C 600 ${lineAyStart.toFixed(1)}, 680 145, 840 145`);
-
-    const lineByStart = 72 + (yPeakB * 0.55);
-    if (lineBEl) lineBEl.setAttribute("d", `M 475 ${lineByStart.toFixed(1)} C 610 ${lineByStart.toFixed(1)}, 700 230, 880 230`);
-
-    const lineCyStart = 345 + (thermalPeakY * 0.85);
-    if (lineCEl) lineCEl.setAttribute("d", `M 475 ${lineCyStart.toFixed(1)} C 610 ${lineCyStart.toFixed(1)}, 710 425, 860 425`);
-}
-
-function updateSpatialDynamicGraphs(tel, stress) {
     try {
-        wavePhase += 0.06;
+        wavePhase += 0.055;
         const sv = (stress && typeof stress.s_v === "number") ? stress.s_v : 0.05;
         const si = (stress && typeof stress.s_i === "number") ? stress.s_i : 0.05;
         const st = (stress && typeof stress.s_t === "number") ? stress.s_t : 0.05;
         const svib = (stress && typeof stress.s_vib === "number") ? stress.s_vib : 0.05;
 
-        // 1. Calculate dynamic wave peak amplitudes based on live telemetry stress
-        const vAmp = 14 + (sv * 24) + Math.sin(wavePhase * 1.2) * 4;
-        const iAmp = 12 + (si * 20) + Math.cos(wavePhase * 1.5) * 3.5;
-        const vibAmp = 10 + (svib * 26) + Math.sin(wavePhase * 2.0) * 5;
-        const thermalPeakY = clamp(60 - (st * 35) + Math.sin(wavePhase * 0.9) * 8, 15, 80);
+        // Amplitudes scaled by operational stress
+        const vAmp = 9.0 + (sv * 20.0) + Math.sin(wavePhase * 1.2) * 2.0;
+        const iAmp = 8.5 + (si * 18.0) + Math.cos(wavePhase * 1.4) * 1.8;
+        const vibAmp = 7.5 + (svib * 24.0) + Math.sin(wavePhase * 2.0) * 2.5;
 
-        // 2. Generate smooth sine wave paths for Graph (a)
-        let dMeasuredV = "M 45 45";
-        for (let x = 45; x <= 380; x += 15) {
-            const y = 45 + Math.sin((x - 45) * 0.05 + wavePhase) * vAmp;
-            dMeasuredV += ` L ${x} ${y.toFixed(1)}`;
+        // -------------------------------------------------------------
+        // 1. GRAPH (a): Tri-Axial Vibration & Core Magnetostriction Spectrum
+        // -------------------------------------------------------------
+        // Channel X (Radial Tank Vib - Cyan - 100Hz + Harmonics)
+        let dMeasuredV = "M 45 ";
+        let lastVx = 50;
+        for (let x = 45; x <= 380; x += 3) {
+            const dx = x - 45;
+            // 100Hz magnetostriction fundamental + 200Hz harmonic + acoustic ripple
+            const y = 52 + Math.sin(dx * 0.052 + wavePhase) * vAmp
+                         + Math.sin(dx * 0.104 + wavePhase * 2.0 + 0.6) * (vAmp * 0.38)
+                         + Math.sin(dx * 0.208 + wavePhase * 3.0) * (vAmp * 0.14)
+                         + Math.cos(x * 0.45) * 0.8;
+            lastVx = y;
+            dMeasuredV += (x === 45 ? `${y.toFixed(1)}` : ` L ${x} ${y.toFixed(1)}`);
         }
-        let dPredictedV = "M 380 45";
-        for (let x = 380; x <= 505; x += 15) {
-            const y = 45 + Math.sin((x - 45) * 0.08 + wavePhase * 1.8) * (vAmp * 1.4);
+
+        let dPredictedV = `M 380 ${lastVx.toFixed(1)}`;
+        let confAUpper = `M 380 ${lastVx.toFixed(1)}`;
+        let confALowerPts = [];
+        let yPeakA = 25;
+
+        for (let x = 380; x <= 505; x += 3) {
+            const dx = x - 45;
+            // Anomaly envelope resonance peaking at x = 435 (Focal circle A)
+            const burst = 1.0 + (1.2 + sv * 1.6) * Math.exp(-Math.pow((x - 435) / 34, 2));
+            const y = 52 + (Math.sin(dx * 0.052 + wavePhase * 1.5) * vAmp
+                         + Math.sin(dx * 0.156 + wavePhase * 2.8 + 0.9) * (vAmp * 0.48)) * burst;
+            if (x === 435) yPeakA = y;
             dPredictedV += ` L ${x} ${y.toFixed(1)}`;
+
+            const spread = 4.0 + ((x - 380) / 125) * 12.0;
+            confAUpper += ` L ${x} ${(y - spread).toFixed(1)}`;
+            confALowerPts.unshift(`L ${x} ${(y + spread).toFixed(1)}`);
+        }
+        const dConfBandA = confAUpper + " " + confALowerPts.join(" ") + " Z";
+
+        // Channel Y (Axial Clamping Tension Vib - Lime)
+        let dMeasuredI = "M 45 ";
+        let lastIx = 108;
+        for (let x = 45; x <= 380; x += 3) {
+            const dx = x - 45;
+            const y = 108 + Math.cos(dx * 0.065 + wavePhase + 1.2) * iAmp
+                          + Math.sin(dx * 0.13 + wavePhase * 2.0 + 1.8) * (iAmp * 0.42)
+                          + Math.sin(x * 0.32) * 1.0;
+            lastIx = y;
+            dMeasuredI += (x === 45 ? `${y.toFixed(1)}` : ` L ${x} ${y.toFixed(1)}`);
         }
 
-        let dMeasuredI = "M 45 105";
-        for (let x = 45; x <= 380; x += 15) {
-            const y = 105 + Math.sin((x - 45) * 0.05 + wavePhase + 1.5) * iAmp;
-            dMeasuredI += ` L ${x} ${y.toFixed(1)}`;
-        }
-        let dPredictedI = "M 380 105";
-        for (let x = 380; x <= 505; x += 15) {
-            const y = 105 + Math.cos((x - 45) * 0.07 + wavePhase * 1.4) * (iAmp * 1.3);
+        let dPredictedI = `M 380 ${lastIx.toFixed(1)}`;
+        let confBUpper = `M 380 ${lastIx.toFixed(1)}`;
+        let confBLowerPts = [];
+        let yPeakB = 75;
+
+        for (let x = 380; x <= 505; x += 3) {
+            const dx = x - 45;
+            const burst = 1.0 + (1.0 + si * 1.4) * Math.exp(-Math.pow((x - 435) / 34, 2));
+            const y = 108 + (Math.cos(dx * 0.065 + wavePhase * 1.4 + 1.2) * iAmp
+                          + Math.sin(dx * 0.195 + wavePhase * 2.5 + 2.0) * (iAmp * 0.45)) * burst;
+            if (x === 435) yPeakB = y;
             dPredictedI += ` L ${x} ${y.toFixed(1)}`;
+
+            const spread = 3.5 + ((x - 380) / 125) * 11.0;
+            confBUpper += ` L ${x} ${(y - spread).toFixed(1)}`;
+            confBLowerPts.unshift(`L ${x} ${(y + spread).toFixed(1)}`);
+        }
+        const dConfBandB = confBUpper + " " + confBLowerPts.join(" ") + " Z";
+
+        // Channel Z (Tangential Tank Modal Vib - Pink/Purple)
+        let dMeasuredVib = "M 45 ";
+        let lastVibX = 162;
+        for (let x = 45; x <= 380; x += 3) {
+            const dx = x - 45;
+            const y = 162 + Math.sin(dx * 0.082 + wavePhase * 1.3 + 2.5) * vibAmp
+                          + Math.cos(dx * 0.246 + wavePhase * 2.5) * (vibAmp * 0.32)
+                          + Math.sin(x * 0.52) * 0.9;
+            lastVibX = y;
+            dMeasuredVib += (x === 45 ? `${y.toFixed(1)}` : ` L ${x} ${y.toFixed(1)}`);
         }
 
-        let dMeasuredVib = "M 45 165";
-        for (let x = 45; x <= 380; x += 15) {
-            const y = 165 + Math.sin((x - 45) * 0.05 + wavePhase + 3.0) * vibAmp;
-            dMeasuredVib += ` L ${x} ${y.toFixed(1)}`;
-        }
-        let dPredictedVib = "M 380 165";
-        for (let x = 380; x <= 505; x += 15) {
-            const y = 165 + Math.sin((x - 45) * 0.09 + wavePhase * 2.2) * (vibAmp * 1.5);
+        let dPredictedVib = `M 380 ${lastVibX.toFixed(1)}`;
+        let yPeakVib = 150;
+        for (let x = 380; x <= 505; x += 3) {
+            const dx = x - 45;
+            const burst = 1.0 + (1.1 + svib * 1.5) * Math.exp(-Math.pow((x - 435) / 34, 2));
+            const y = 162 + (Math.sin(dx * 0.082 + wavePhase * 1.8 + 2.5) * vibAmp
+                          + Math.sin(dx * 0.28 + wavePhase * 2.8) * (vibAmp * 0.4)) * burst;
+            if (x === 435) yPeakVib = y;
             dPredictedVib += ` L ${x} ${y.toFixed(1)}`;
         }
 
+        // Apply to Graph (a) Card DOM
         const cardA = document.querySelectorAll(".wave-graph-card")[0];
         if (cardA) {
-            const measuredVEl = cardA.querySelector(".wave-path.measured-v");
-            const predictedVEl = cardA.querySelector(".wave-path.predicted-v");
-            const measuredIEl = cardA.querySelector(".wave-path.measured-i");
-            const predictedIEl = cardA.querySelector(".wave-path.predicted-i");
-            const measuredVibEl = cardA.querySelector(".wave-path.measured-vib");
-            const predictedVibEl = cardA.querySelector(".wave-path.predicted-vib");
+            const mVEl = cardA.querySelector(".wave-path.measured-v");
+            const pVEl = cardA.querySelector(".wave-path.predicted-v");
+            const mIEl = cardA.querySelector(".wave-path.measured-i");
+            const pIEl = cardA.querySelector(".wave-path.predicted-i");
+            const mVibEl = cardA.querySelector(".wave-path.measured-vib");
+            const pVibEl = cardA.querySelector(".wave-path.predicted-vib");
+            const confAEl = cardA.querySelector(".pred-confidence-band.conf-band-a");
+            const confBEl = cardA.querySelector(".pred-confidence-band.conf-band-b");
 
-            if (measuredVEl) measuredVEl.setAttribute("d", dMeasuredV);
-            if (predictedVEl) predictedVEl.setAttribute("d", dPredictedV);
-            if (measuredIEl) measuredIEl.setAttribute("d", dMeasuredI);
-            if (predictedIEl) predictedIEl.setAttribute("d", dPredictedI);
-            if (measuredVibEl) measuredVibEl.setAttribute("d", dMeasuredVib);
-            if (predictedVibEl) predictedVibEl.setAttribute("d", dPredictedVib);
+            if (mVEl) mVEl.setAttribute("d", dMeasuredV);
+            if (pVEl) pVEl.setAttribute("d", dPredictedV);
+            if (mIEl) mIEl.setAttribute("d", dMeasuredI);
+            if (pIEl) pIEl.setAttribute("d", dPredictedI);
+            if (mVibEl) mVibEl.setAttribute("d", dMeasuredVib);
+            if (pVibEl) pVibEl.setAttribute("d", dPredictedVib);
+            if (confAEl) confAEl.setAttribute("d", dConfBandA);
+            if (confBEl) confBEl.setAttribute("d", dConfBandB);
         }
 
-        // 3. Dynamic Anomaly Peak Focus Circles Y-positions
-        const yPeakA = 45 + Math.sin((435 - 45) * 0.08 + wavePhase * 1.8) * (vAmp * 1.4);
-        const yPeakB = 105 + Math.cos((435 - 45) * 0.07 + wavePhase * 1.4) * (iAmp * 1.3);
-        const yPeakVib = 165 + Math.sin((435 - 45) * 0.09 + wavePhase * 2.2) * (vibAmp * 1.5);
+        // -------------------------------------------------------------
+        // 2. GRAPH (c): Winding Thermal Load & Mechanical Tension Dynamic Profile
+        // -------------------------------------------------------------
+        // Measured Diurnal Load Profile with Electrodynamic Lorentz Force Ripples
+        let dMeasuredLoad = "M 45 ";
+        let dMeasuredArea = "M 45 155 L 45 ";
+        let lastLoadY = 125;
 
+        for (let x = 45; x <= 380; x += 3) {
+            const p = (x - 45) / 335; // 0 to 1
+            // Diurnal utility load pattern (valley -> morning ramp -> industrial noon -> evening peak)
+            const baseCurve = 0.22 
+                + 0.52 * Math.pow(Math.sin(p * Math.PI), 1.5)
+                + 0.20 * Math.sin(p * 2 * Math.PI - 0.4)
+                + (st * 0.38);
+            // Dynamic Lorentz electrodynamic tension ripple (I^2 pulsations)
+            const lorentzRipple = Math.sin(x * 0.18 + wavePhase * 2.5) * (1.8 + si * 4.2);
+            const y = clamp(134 - (baseCurve * 72) + lorentzRipple, 32, 148);
+            lastLoadY = y;
+
+            if (x === 45) {
+                dMeasuredLoad += `${y.toFixed(1)}`;
+                dMeasuredArea += `${y.toFixed(1)}`;
+            } else {
+                dMeasuredLoad += ` L ${x} ${y.toFixed(1)}`;
+                dMeasuredArea += ` L ${x} ${y.toFixed(1)}`;
+            }
+        }
+        dMeasuredArea += ` L 380 155 Z`;
+
+        // Predicted Thermal Runaway Excursion (Seamless continuity from lastLoadY)
+        const targetPeakThermalY = clamp(48 - (st * 32) - (si * 16) + Math.sin(wavePhase * 0.9) * 4, 18, 75);
+        let dPredictedLoad = `M 380 ${lastLoadY.toFixed(1)}`;
+        let predBandUpper = `M 380 ${lastLoadY.toFixed(1)}`;
+        let predBandLowerPts = [];
+
+        for (let x = 380; x <= 505; x += 3) {
+            let y;
+            if (x <= 420) {
+                const t = (x - 380) / 40;
+                const ease = 1 - Math.exp(-t * 2.8);
+                y = lastLoadY + (targetPeakThermalY - lastLoadY) * ease;
+            } else if (x <= 455) {
+                const t = (x - 420) / 35;
+                y = targetPeakThermalY + Math.sin(t * Math.PI * 0.5) * 6;
+            } else {
+                const t = (x - 455) / 50;
+                y = targetPeakThermalY + 6 + (110 - (targetPeakThermalY + 6)) * (1 - Math.exp(-t * 2.2));
+            }
+            const flutter = Math.sin(x * 0.22 + wavePhase * 3.0) * (1.2 + si * 3.0);
+            const finalY = clamp(y + flutter, 16, 150);
+
+            dPredictedLoad += ` L ${x} ${finalY.toFixed(1)}`;
+
+            const spread = 4.0 + ((x - 380) / 125) * 14.0;
+            predBandUpper += ` L ${x} ${(finalY - spread).toFixed(1)}`;
+            predBandLowerPts.unshift(`L ${x} ${(finalY + spread).toFixed(1)}`);
+        }
+        const dPredConfidenceBand = predBandUpper + " " + predBandLowerPts.join(" ") + " Z";
+
+        // Apply to Graph (c) Card DOM
+        const cardC = document.querySelectorAll(".wave-graph-card")[1];
+        if (cardC) {
+            const mLoadEl = cardC.querySelector(".wave-path.measured-v");
+            const pLoadEl = cardC.querySelector(".wave-path.predicted-v");
+            const mAreaEl = cardC.querySelector(".wave-area.measured-load-area");
+            const pBandEl = cardC.querySelector(".wave-area.pred-load-band");
+
+            if (mLoadEl) mLoadEl.setAttribute("d", dMeasuredLoad);
+            if (pLoadEl) pLoadEl.setAttribute("d", dPredictedLoad);
+            if (mAreaEl) mAreaEl.setAttribute("d", dMeasuredArea);
+            if (pBandEl) pBandEl.setAttribute("d", dPredConfidenceBand);
+        }
+
+        // -------------------------------------------------------------
+        // 3. Focal Circles & Leader Line Tracking
+        // -------------------------------------------------------------
         const focusGroups = document.querySelectorAll(".graph-peak-focus");
         if (focusGroups[0]) focusGroups[0].setAttribute("transform", `translate(435, ${yPeakA.toFixed(1)})`);
         if (focusGroups[1]) focusGroups[1].setAttribute("transform", `translate(435, ${yPeakB.toFixed(1)})`);
         if (focusGroups[2]) focusGroups[2].setAttribute("transform", `translate(435, ${yPeakVib.toFixed(1)})`);
+        if (focusGroups[3]) focusGroups[3].setAttribute("transform", `translate(420, ${targetPeakThermalY.toFixed(1)})`);
 
-        // 4. Update Graph (c) Thermal Tension Peak
-        const dPredictedThermal = `M 380 125 L 390 125 L 395 ${thermalPeakY.toFixed(1)} L 445 ${thermalPeakY.toFixed(1)} L 450 125 L 505 125`;
-        const cardC = document.querySelectorAll(".wave-graph-card")[1];
-        if (cardC) {
-            const cardCPred = cardC.querySelector(".wave-path.predicted-v");
-            if (cardCPred) cardCPred.setAttribute("d", dPredictedThermal);
-        }
-
-        if (focusGroups[3]) focusGroups[3].setAttribute("transform", `translate(420, ${thermalPeakY.toFixed(1)})`);
-
-        // 5. Update SVG Leader Lines dynamically to track moving focal circles!
+        // Dynamically align SVG leader lines from focal circles across to the 3D digital twin
         const lineAEl = document.querySelector(".leader-line.line-a");
         const lineBEl = document.querySelector(".leader-line.line-b");
         const lineCEl = document.querySelector(".leader-line.line-c");
@@ -639,8 +664,9 @@ function updateSpatialDynamicGraphs(tel, stress) {
         const lineByStart = 72 + (yPeakB * 0.55);
         if (lineBEl) lineBEl.setAttribute("d", `M 475 ${lineByStart.toFixed(1)} C 610 ${lineByStart.toFixed(1)}, 700 230, 880 230`);
 
-        const lineCyStart = 345 + (thermalPeakY * 0.85);
+        const lineCyStart = 345 + (targetPeakThermalY * 0.85);
         if (lineCEl) lineCEl.setAttribute("d", `M 475 ${lineCyStart.toFixed(1)} C 610 ${lineCyStart.toFixed(1)}, 710 425, 860 425`);
+
     } catch(err) {
         console.warn("Spatial dynamic graph update skipped:", err);
     }
@@ -1208,7 +1234,7 @@ async function runAiDiagnostics() {
         const instrumentsEl = $("diagInstrumentsList");
         if (instrumentsEl && report.recommended_instruments) {
             instrumentsEl.innerHTML = report.recommended_instruments.map(inst => `
-                <span class="badge bg-secondary text-info font-monospace py-2 px-3 border border-info border-opacity-25">${inst}</span>
+                <span class="badge font-monospace py-2 px-3 fw-semibold" style="background: rgba(14, 165, 233, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); font-size: 0.82rem;">${inst}</span>
             `).join("");
         }
 
@@ -1279,11 +1305,11 @@ if (copyAdvBtn) {
             await navigator.clipboard.writeText(textToCopy);
             copyAdvBtn.classList.remove("btn-outline-warning");
             copyAdvBtn.classList.add("btn-success");
-            copyAdvBtn.innerHTML = `<span>✓</span> Copied to Clipboard!`;
+            copyAdvBtn.innerHTML = `<span><svg class="ui-icon me-1 text-white" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span> Copied to Clipboard!`;
             setTimeout(() => {
                 copyAdvBtn.classList.remove("btn-success");
                 copyAdvBtn.classList.add("btn-outline-warning");
-                copyAdvBtn.innerHTML = `<span id="copyBtnIcon">📋</span> Copy Site Advisory`;
+                copyAdvBtn.innerHTML = `<span id="copyBtnIcon"><svg class="ui-icon me-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span> Copy Site Advisory`;
             }, 2200);
         } catch(err) {
             console.error("Failed to copy advisory:", err);

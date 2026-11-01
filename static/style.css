@@ -9,8 +9,8 @@
     --line: rgba(255, 255, 255, 0.12);
     --line-strong: rgba(255, 255, 255, 0.36);
     --text: #f8fafc;
-    --muted: #94a3b8;
-    --soft: #64748b;
+    --muted: #cbd5e1;
+    --soft: #94a3b8;
     --cyan: #00f0ff;
     --blue: #38bdf8;
     --green: #22c55e;
@@ -1349,10 +1349,40 @@ model-viewer {
 .leg-dot.cyan { background: #00f0ff; box-shadow: 0 0 6px #00f0ff; }
 .leg-dot.lime { background: #00ff88; box-shadow: 0 0 6px #00ff88; }
 .leg-dot.pink { background: #c084fc; box-shadow: 0 0 6px #c084fc; }
+.leg-dot.amber { background: #ffb703; box-shadow: 0 0 6px #ffb703; }
 .leg-dot.red-dashed {
     border-top: 2px dashed #ff0055;
     background: transparent;
     width: 12px;
+}
+.leg-dot.red-limit {
+    border-top: 2px dashed rgba(248, 113, 113, 0.9);
+    background: transparent;
+    width: 14px;
+}
+
+.wave-sub-tag {
+    font-size: 0.62rem;
+    font-family: var(--mono);
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 2px 7px;
+    display: inline-block;
+}
+
+.wave-area {
+    pointer-events: none;
+}
+.wave-path.reference-limit {
+    stroke: rgba(239, 68, 68, 0.7);
+    stroke-width: 1.2;
+    stroke-dasharray: 4, 3;
+    filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.4));
+}
+.pred-confidence-band {
+    opacity: 0.28;
 }
 
 .canvas-3d-wrapper {
@@ -2744,3 +2774,63 @@ model-viewer {
 
 
 
+
+
+/* Professional Vector SVG UI Icon Styles */
+.ui-icon {
+    display: inline-block;
+    vertical-align: -2px;
+    margin-right: 5px;
+    flex-shrink: 0;
+}
+
+.sensor-icon {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.sensor-icon svg {
+    display: block;
+}
+
+.temp-box .sensor-icon svg {
+    color: #ffb703;
+    filter: drop-shadow(0 0 6px rgba(255, 183, 3, 0.6));
+}
+
+.humidity-box .sensor-icon svg {
+    color: #00f0ff;
+    filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.6));
+}
+
+.motion-box .sensor-icon svg {
+    color: #ff0055;
+    filter: drop-shadow(0 0 6px rgba(255, 0, 85, 0.6));
+}
+
+
+/* High-Contrast Readability Overrides for Dark Substation Theme */
+.text-muted {
+    color: #cbd5e1 !important;
+}
+
+#diagRagReferences {
+    color: #f1f5f9 !important;
+    font-size: 0.88rem !important;
+    line-height: 1.6 !important;
+}
+
+#diagModelUsed {
+    color: #38bdf8 !important;
+    font-weight: 700 !important;
+}
+
+#diagTimestamp {
+    color: #7dd3fc !important;
+}
+
+#diagDisclaimer {
+    color: #fde047 !important;
+}

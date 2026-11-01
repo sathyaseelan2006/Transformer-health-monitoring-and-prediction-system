@@ -5,17 +5,19 @@
 const char* ssid     = "Reno11";
 const char* password = "9790419564";
 
-// Backend API URL on laptop
-const char* serverUrl = "http://172.3.2.135:8080/api/telemetry";
+// Backend API URL on laptop (current IP on Reno11 hotspot)
+const char* serverUrl = "http://10.153.163.136:8080/api/telemetry";
 
-// Serial2 pins connected to STM32 (PA9 -> RX2, PA10 -> TX2)
+// Serial2 pins connected to STM32 (PA9 -> RX2, PA10 not needed for one-way telemetry)
 #define RXD2 16
-#define TXD2 17
 
 void setup() {
-  Serial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  Serial.begin(9600);
+  Serial2.begin(9600, SERIAL_8N1, RXD2, -1); // -1 disables TX to prevent pin contention
   Serial2.setTimeout(100); // 100ms timeout for non-blocking UART read
+
+  // Lower RF transmit power to prevent chip heating while maintaining reliable Wi-Fi
+  WiFi.setTxPower(WIFI_POWER_15dBm);
 
   Serial.println("\n[ESP32 Gateway] Initializing Wi-Fi...");
   WiFi.mode(WIFI_STA);
@@ -60,8 +62,12 @@ void loop() {
         }
         http.end();
       } else {
-        Serial.println("[WARN] Wi-Fi disconnected. Reconnecting...");
-        WiFi.begin(ssid, password);
+        static unsigned long lastReconnect = 0;
+        if (millis() - lastReconnect > 10000) {
+          lastReconnect = millis();
+          Serial.println("[WARN] Wi-Fi disconnected. Reconnecting...");
+          WiFi.begin(ssid, password);
+        }
       }
     }
   }

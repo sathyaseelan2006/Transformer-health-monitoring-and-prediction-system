@@ -21,8 +21,8 @@
                     <p class="subhead">Transformer health, life prediction, environmental risk fusion, and AI-guided maintenance in one operator cockpit.</p>
                 </div>
                 <div class="topbar-actions">
-                    <button class="btn btn-outline-info btn-sm font-monospace fw-bold" id="triggerAiDiagBtn" type="button">⚡ Run AI Diagnostics</button>
-                    <button class="btn btn-outline-warning btn-sm font-monospace fw-bold" id="topScenarioBtn" type="button">🔀 Cycle Scenario</button>
+                    <button class="btn btn-outline-info btn-sm font-monospace fw-bold" id="triggerAiDiagBtn" type="button"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Run AI Diagnostics</button>
+                    <button class="btn btn-outline-warning btn-sm font-monospace fw-bold" id="topScenarioBtn" type="button"><svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg> Cycle Scenario</button>
                     <span class="system-pill ok"><span></span> STM32 edge active</span>
                     <span class="system-pill cyan">SX1278 LoRa P2P</span>
                     <span class="system-pill" id="dataSourcePill">Static simulation</span>
@@ -31,7 +31,7 @@
             </header>
 
             <nav class="module-nav-bar" aria-label="Architecture Modules">
-                <a href="#status-performance" class="mod-pill active"><span class="mod-num">LIVE</span> 🔴 Status & Performance</a>
+                <a href="#status-performance" class="mod-pill active"><span class="mod-num">LIVE</span> <svg class="ui-icon text-danger" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"></circle></svg> Status & Performance</a>
                 <a href="#module-sensing" class="mod-pill"><span class="mod-num">01</span> Sensing & Data Acquisition</a>
                 <a href="#module-health" class="mod-pill"><span class="mod-num">02</span> Health Assessment & Life Prediction</a>
                 <a href="#module-risk" class="mod-pill"><span class="mod-num">03</span> Environmental Risk Fusion</a>
@@ -68,7 +68,7 @@
                 <div class="panel-head">
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-danger live-pulse-badge">🔴 LIVE STREAMING</span>
+                            <span class="badge bg-danger live-pulse-badge"><svg class="ui-icon text-white me-1" width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"></circle></svg> LIVE STREAMING</span>
                             <span class="badge bg-dark border border-info text-info font-monospace">APACHE KAFKA TOPICS</span>
                             <span class="badge bg-dark border border-success text-success font-monospace" id="dbStatusBadge">MySQL 8.0 DBMS</span>
                         </div>
@@ -146,7 +146,7 @@
                     <div class="alerts-center-card">
                         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                             <div>
-                                <h3 class="h6 fw-bold text-white mb-0">🚨 Classified Alert Management</h3>
+                                <h3 class="h6 fw-bold text-white mb-0"><svg class="ui-icon text-danger me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Classified Alert Management</h3>
                                 <span class="text-muted small">Prioritized threshold triggers & safety events</span>
                             </div>
                             <div class="btn-group btn-group-sm font-monospace" role="group" id="alertFilterGroup">
@@ -579,7 +579,7 @@
                             <div class="env-sensor-box temp-box" id="envTempBox">
                                 <div>
                                     <div class="sensor-icon-title">
-                                        <span class="sensor-icon">🌡️</span>
+                                        <span class="sensor-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg></span>
                                         <div>
                                             <span class="sensor-name">Ambient Temp</span>
                                             <span class="sensor-model-tag">DHT11 / LM35 Sensor</span>
@@ -603,7 +603,7 @@
                             <div class="env-sensor-box humidity-box" id="envHumidityBox">
                                 <div>
                                     <div class="sensor-icon-title">
-                                        <span class="sensor-icon">💧</span>
+                                        <span class="sensor-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg></span>
                                         <div>
                                             <span class="sensor-name">Relative Humidity</span>
                                             <span class="sensor-model-tag">RH Hygrometer Sensor</span>
@@ -627,7 +627,7 @@
                             <div class="env-sensor-box motion-box" id="envMotionBox">
                                 <div>
                                     <div class="sensor-icon-title">
-                                        <span class="sensor-icon">📳</span>
+                                        <span class="sensor-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span>
                                         <div>
                                             <span class="sensor-name">Motion & Seismic Shake</span>
                                             <span class="sensor-model-tag">SW-420 / MPU6050 Accelerometer</span>
@@ -654,7 +654,7 @@
                         <!-- Bar A: Rust & Corrosion Possibility (Temp + Humidity) -->
                         <div class="risk-bar-card">
                             <div class="risk-bar-header">
-                                <span class="risk-bar-title">🟤 Rust & Atmospheric Corrosion</span>
+                                <span class="risk-bar-title"><svg class="ui-icon me-1 text-warning" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>Rust & Atmospheric Corrosion</span>
                                 <strong class="risk-bar-score text-warning" id="rustRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
@@ -667,14 +667,14 @@
                                 <span class="text-slate-400 font-monospace" style="font-size: 0.68rem;" id="rustKineticsNote">ISO 9223 Oxidation Rate</span>
                             </div>
                             <div class="risk-bar-impact">
-                                🎯 <strong>Vulnerable:</strong> Tank cooling radiator fins, pipe joints & bushing seals
+                                <svg class="ui-icon text-info me-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><strong>Vulnerable:</strong> Tank cooling radiator fins, pipe joints & bushing seals
                             </div>
                         </div>
 
                         <!-- Bar B: Seismic & Ground Shake Damage (Motion Sensor) -->
                         <div class="risk-bar-card">
                             <div class="risk-bar-header">
-                                <span class="risk-bar-title">⚡ Earthquake & Ground Tremor Shake</span>
+                                <span class="risk-bar-title"><svg class="ui-icon me-1 text-danger" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>Earthquake & Ground Tremor Shake</span>
                                 <strong class="risk-bar-score text-danger" id="seismicRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
@@ -687,14 +687,14 @@
                                 <span class="text-slate-400 font-monospace" style="font-size: 0.68rem;" id="seismicKineticsNote">Tremor Displacement</span>
                             </div>
                             <div class="risk-bar-impact">
-                                🎯 <strong>Vulnerable:</strong> Substation anchor bolts, porcelain bushings & Buchholz relay
+                                <svg class="ui-icon text-info me-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><strong>Vulnerable:</strong> Substation anchor bolts, porcelain bushings & Buchholz relay
                             </div>
                         </div>
 
                         <!-- Bar C: High Temperature Environmental Damage (Temp Sensor) -->
                         <div class="risk-bar-card">
                             <div class="risk-bar-header">
-                                <span class="risk-bar-title">☀️ Ambient High Temperature Stress</span>
+                                <span class="risk-bar-title"><svg class="ui-icon me-1 text-warning" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>Ambient High Temperature Stress</span>
                                 <strong class="risk-bar-score text-info" id="thermalRiskPercent">--%</strong>
                             </div>
                             <div class="risk-track-bar">
@@ -707,7 +707,7 @@
                                 <span class="text-slate-400 font-monospace" style="font-size: 0.68rem;">IEEE C57.91 Arrhenius Stress</span>
                             </div>
                             <div class="risk-bar-impact">
-                                🎯 <strong>Vulnerable:</strong> Insulation cellulose paper, oil dielectric breakdown & gasket aging
+                                <svg class="ui-icon text-info me-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><strong>Vulnerable:</strong> Insulation cellulose paper, oil dielectric breakdown & gasket aging
                             </div>
                         </div>
                     </div>
@@ -773,7 +773,7 @@
                         </div>
                         <div class="env-advisory-actions">
                             <button type="button" class="btn btn-outline-warning btn-sm font-monospace" id="copyEnvAdvisoryBtn">
-                                <span id="copyBtnIcon">📋</span> Copy Site Advisory
+                                <span id="copyBtnIcon"><svg class="ui-icon me-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span> Copy Site Advisory
                             </button>
                         </div>
                     </div>
@@ -827,7 +827,7 @@
                             <div><span>Safety role</span><strong>Decision support only</strong></div>
                         </div>
                         <button class="btn btn-primary btn-sm px-3 py-2 fw-bold font-monospace shadow" id="cardDiagnoseBtn" type="button">
-                            ⚡ Run Diagnosis
+                            <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Run Diagnosis
                         </button>
                     </div>
                 </article>
@@ -879,40 +879,40 @@
                         <div class="p-3 mb-3 rounded border" id="diagSeverityBanner" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4) !important;">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="badge font-monospace px-2 py-1" id="diagSeverityCode">SEV-1 CRITICAL</span>
-                                <small class="text-muted font-monospace" id="diagTimestamp">2026-10-09 22:00:00</small>
+                                <small class="text-info font-monospace fw-semibold" id="diagTimestamp" style="color: #7dd3fc !important;">2026-10-09 22:00:00</small>
                             </div>
                             <h5 class="fw-bold mb-0 text-white" id="diagLikelyCause">Thermal Runaway / Insulation Degradation</h5>
                         </div>
 
                         <!-- Technician Action Playbook -->
                         <div class="mb-4">
-                            <h6 class="text-info font-monospace text-uppercase fw-bold mb-2">📋 Field Technician Step-by-Step Playbook</h6>
+                            <h6 class="text-info font-monospace text-uppercase fw-bold mb-2"><svg class="ui-icon me-1 text-info" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Field Technician Step-by-Step Playbook</h6>
                             <ol class="list-group list-group-numbered" id="diagPlaybookList" style="--bs-list-group-bg: rgba(30, 41, 59, 0.6); --bs-list-group-color: #f8fafc; --bs-list-group-border-color: rgba(255,255,255,0.08);">
                             </ol>
                         </div>
 
                         <!-- Recommended Instruments -->
                         <div class="mb-4">
-                            <h6 class="text-warning font-monospace text-uppercase fw-bold mb-2">🧰 Required Field Testing Instruments</h6>
+                            <h6 class="text-warning font-monospace text-uppercase fw-bold mb-2"><svg class="ui-icon me-1 text-warning" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg> Required Field Testing Instruments</h6>
                             <div class="d-flex flex-wrap gap-2" id="diagInstrumentsList">
                             </div>
                         </div>
 
                         <!-- RAG Grounded IEEE Citations -->
-                        <div class="mb-3 p-3 rounded" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08);">
-                            <h6 class="text-success font-monospace text-uppercase fw-bold mb-1">📚 Grounded Standards Citations (IEEE / IEC / NFPA)</h6>
-                            <p class="small text-muted mb-0" id="diagRagReferences">IEEE C57.91-2011 (Loading Guide), IEEE C57.104 (DGA Analysis), NFPA 850 (Fire Protection for Generating Plants & Converter Stations)</p>
+                        <div class="mb-3 p-3 rounded" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(0, 240, 255, 0.25);">
+                            <h6 class="text-success font-monospace text-uppercase fw-bold mb-1"><svg class="ui-icon me-1 text-success" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Grounded Standards Citations (IEEE / IEC / NFPA)</h6>
+                            <p class="small mb-0 font-monospace fw-medium" id="diagRagReferences" style="color: #f1f5f9 !important; line-height: 1.6; font-size: 0.88rem;">IEEE C57.91-2011 (Loading Guide), IEEE C57.104 (DGA Analysis), NFPA 850 (Fire Protection for Generating Plants & Converter Stations)</p>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center small text-muted font-monospace pt-2 border-top border-secondary border-opacity-25">
-                            <span id="diagModelUsed">Engine: Phi-3-Mini / Grounded RAG</span>
-                            <span class="text-warning" id="diagDisclaimer">⚠️ Decision support only. De-energize before physical inspection.</span>
+                        <div class="d-flex justify-content-between align-items-center small font-monospace pt-2 border-top border-secondary border-opacity-25">
+                            <span id="diagModelUsed" class="text-info fw-bold" style="color: #38bdf8 !important;">Engine: Phi-3-Mini / Grounded RAG</span>
+                            <span class="text-warning fw-semibold" id="diagDisclaimer" style="color: #fde047 !important;"><svg class="ui-icon me-1 text-warning" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Decision support only. De-energize before physical inspection.</span>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-top border-secondary border-opacity-25">
-                    <button type="button" class="btn btn-secondary btn-sm font-monospace" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-info btn-sm font-monospace fw-bold" id="diagReRunBtn">🔄 Re-Run Analysis</button>
+                    <button type="button" class="btn btn-outline-light btn-sm font-monospace" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-info btn-sm font-monospace fw-bold" id="diagReRunBtn"><svg class="ui-icon me-1" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Re-Run Analysis</button>
                 </div>
             </div>
         </div>

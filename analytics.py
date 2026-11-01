@@ -196,6 +196,28 @@ class TransformerAnalytics:
           3. Thermal Ambient Degradation Stress
           4. Fused Composite Environmental Risk (0-100%)
         """
+        # Defensive type conversion to prevent type errors across dynamic calls
+        try:
+            transformer_temp = float(transformer_temp)
+        except (ValueError, TypeError):
+            transformer_temp = 35.0
+        try:
+            ambient_temp = float(ambient_temp)
+        except (ValueError, TypeError):
+            ambient_temp = 28.0
+        try:
+            rel_humidity = float(rel_humidity)
+        except (ValueError, TypeError):
+            rel_humidity = 50.0
+        try:
+            motion_shake = float(motion_shake)
+        except (ValueError, TypeError):
+            motion_shake = 0.05
+        try:
+            wind_speed = float(wind_speed)
+        except (ValueError, TypeError):
+            wind_speed = 10.0
+        oil_level = str(oil_level).upper()
         # A. Dew Point & Condensation Calculation (Magnus-Tetens Psychrometric formula: a = 17.27, b = 237.7 °C)
         rh_clamped = max(0.01, min(100.0, rel_humidity))
         gamma = (17.27 * ambient_temp) / (237.7 + ambient_temp) + math.log(rh_clamped / 100.0)
