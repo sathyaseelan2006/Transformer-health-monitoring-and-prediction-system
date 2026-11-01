@@ -26,8 +26,20 @@ class DatabaseManager:
     def _init_sqlite(self):
         """Initializes embedded fallback SQLite database for resilient local operations."""
         try:
-            os.makedirs("scratch", exist_ok=True)
-            self.sqlite_conn = sqlite3.connect("scratch/local_gridguard.db", check_same_thread=False)
+            is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+            if is_serverless:
+                db_dir = "/tmp"
+            else:
+                db_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch")
+
+            try:
+                os.makedirs(db_dir, exist_ok=True)
+                db_path = os.path.join(db_dir, "local_gridguard.db")
+                self.sqlite_conn = sqlite3.connect(db_path, check_same_thread=False)
+            except Exception as fs_err:
+                logger.warning(f"Filesystem write failed ({fs_err}). Falling back to in-memory SQLite database.")
+                self.sqlite_conn = sqlite3.connect(":memory:", check_same_thread=False)
+
             self.sqlite_conn.row_factory = sqlite3.Row
             cursor = self.sqlite_conn.cursor()
 
@@ -121,17 +133,19 @@ class DatabaseManager:
             
             # Execute schema initialization
             try:
-                with open("db_schema.sql", "r", encoding="utf-8") as f:
-                    schema_sql = f.read()
-                # Run individual statements
-                for stmt in schema_sql.split(";"):
-                    cleaned = stmt.strip()
-                    if cleaned and not cleaned.startswith("--") and not cleaned.startswith("/*"):
-                        try:
-                            cursor.execute(cleaned)
-                        except Exception:
-                            pass
-                conn.commit()
+                schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db_schema.sql")
+                if os.path.exists(schema_path):
+                    with open(schema_path, "r", encoding="utf-8") as f:
+                        schema_sql = f.read()
+                    # Run individual statements
+                    for stmt in schema_sql.split(";"):
+                        cleaned = stmt.strip()
+                        if cleaned and not cleaned.startswith("--") and not cleaned.startswith("/*"):
+                            try:
+                                cursor.execute(cleaned)
+                            except Exception:
+                                pass
+                    conn.commit()
             except Exception as e:
                 logger.warning(f"Could not auto-apply db_schema.sql to MySQL: {e}")
 

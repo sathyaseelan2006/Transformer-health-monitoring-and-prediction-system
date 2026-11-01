@@ -3,6 +3,7 @@ FastAPI Backend Server for Transformer Health & Risk Monitor.
 Serves the custom HTML/CSS/JS frontend and provides real-time telemetry APIs.
 """
 from datetime import datetime, timedelta
+import os
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -468,19 +469,26 @@ def trigger_diagnostics(req: DiagnoseRequest):
             "disclaimer": "Advisory support co-pilot. Follow safety protocols before maintenance."
         }
 
+# Determine base static directory robustly across local and serverless runtimes
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
 # Mount static folder
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
 def serve_index():
-    return FileResponse("static/index.html")
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 @app.get("/analytics")
 def serve_analytics():
-    return FileResponse("static/analytics.html")
+    analytics_file = os.path.join(STATIC_DIR, "results_dashboard.html")
+    if not os.path.exists(analytics_file):
+        analytics_file = os.path.join(STATIC_DIR, "index.html")
+    return FileResponse(analytics_file)
 
 # The dashboard uses root-relative asset URLs while the API remains under /api.
-app.mount("/", StaticFiles(directory="static"), name="root-static")
+app.mount("/", StaticFiles(directory=STATIC_DIR), name="root-static")
 
 if __name__ == "__main__":
     import os

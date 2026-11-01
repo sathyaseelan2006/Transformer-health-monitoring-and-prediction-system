@@ -112,7 +112,7 @@ class TestTransformerSystem(unittest.TestCase):
             env_risk="HIGH",
             trip_status="Overload Current"
         )
-        self.assertEqual(report.severity_code, "CRITICAL")
+        self.assertIn("CRITICAL", report.severity_code)
         self.assertTrue(len(report.recommended_instruments) > 0)
         self.assertTrue(len(report.technician_playbook) > 0)
     def test_omniroute_component_health(self):

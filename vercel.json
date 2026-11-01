@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/static/(.*)",
+      "destination": "/static/$1"
+    },
+    {
+      "source": "/",
+      "destination": "/static/index.html"
+    },
+    {
+      "source": "/analytics",
+      "destination": "/static/results_dashboard.html"
+    },
+    {
+      "source": "/results_dashboard.html",
+      "destination": "/static/results_dashboard.html"
+    },
+    {
+      "source": "/((?!api|static).*)",
+      "destination": "/static/$1"
+    }
+  ]
+}

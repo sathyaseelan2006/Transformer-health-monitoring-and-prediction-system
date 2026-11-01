@@ -28,7 +28,26 @@ flowchart LR
 
 ---
 
-## Option 1: Render.com (Recommended — 100% Free & Easiest)
+## Option 1: Vercel (Instant Global Edge & Serverless)
+
+Vercel provides instant global edge deployment with automated HTTPS, CDN asset distribution, and continuous deployment from GitHub.
+
+### Steps:
+1. **Push your code to GitHub**:
+   ```powershell
+   git add .
+   git commit -m "Configure Vercel serverless deployment"
+   git push origin main
+   ```
+2. Go to **[Vercel Dashboard](https://vercel.com/new)** and sign in with GitHub.
+3. Click **Add New...** > **Project** and select `Transformer-health-monitoring-and-prediction-system`.
+4. In **Framework Preset**, leave it as **Other** (or default).
+5. Click **Deploy**.
+6. In ~60 seconds, your dashboard will be live at `https://transformer-health-monitoring-and-prediction-system.vercel.app`!
+
+---
+
+## Option 2: Render.com (Recommended for Continuous Hardware Telemetry)
 
 Render provides a free web service tier with automated SSL (HTTPS) and continuous deployment from GitHub.
 
@@ -53,7 +72,7 @@ Render provides a free web service tier with automated SSL (HTTPS) and continuou
 
 ---
 
-## Option 2: Railway.app (Fast Docker Deployment)
+## Option 3: Railway.app (Fast Docker Deployment)
 
 Railway provides one-click Docker deployments with zero manual configuration.
 
@@ -67,7 +86,7 @@ Railway provides one-click Docker deployments with zero manual configuration.
 
 ---
 
-## Option 3: Instant Live Tunnel (Free 30-Second Web Demo)
+## Option 4: Instant Live Tunnel (Free 30-Second Web Demo)
 
 If you have your **STM32 and ESP32 hardware connected to your laptop** and want to demo the project immediately over the internet without waiting for cloud builds:
 
@@ -114,8 +133,10 @@ int httpCode = http.POST(jsonTelemetry);
 ## Verification Checklist
 
 - [x] `requirements.txt` generated with all core dependencies.
+- [x] `vercel.json` and `api/index.py` configured for Vercel Serverless Functions.
+- [x] `.vercelignore` configured to exclude local firmware and environment folders.
 - [x] `server.py` updated to read `$PORT` from cloud environment variables.
-- [x] `database.py` updated with automatic `scratch/` directory creation.
+- [x] `database.py` updated with automatic `/tmp` and in-memory serverless fallbacks.
 - [x] `Dockerfile` and `.dockerignore` created for container compatibility.
 - [x] `render.yaml` blueprint created for 1-click cloud configuration.
 - [x] Automated system test suite verified passing.

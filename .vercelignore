@@ -1,0 +1,11 @@
+.venv
+.pio
+.vscode
+.github
+scratch
+src
+backend
+results_figures
+*.log
+__pycache__
+*.pyc
